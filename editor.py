@@ -1,6 +1,8 @@
 # Core
 import pygame as pg
 import sys
+import moderngl
+import array
 
 # From
 from character import *
@@ -10,6 +12,8 @@ from ui import *
 from configs.settings import *
 from stage import *
 from behaviors import *
+from utils.registries import *
+from components.sound import *
 
 # Mics
 import random
@@ -19,9 +23,11 @@ import random
 class Game:
     def __init__(self):
         pg.init()
-        self.screen = pg.display.set_mode((RES_EDITOR))
+        self.screen = pg.display.set_mode((RES_EDITOR), pg.OPENGL | pygame.DOUBLEBUF)
         pg.display.set_caption("TH 69")
         self.clock = pg.time.Clock()
+
+        self.ctx = moderngl.create_context()
 
         #self.enemy_cooldown = 1000.0
         #self.cooldown = 1000.0
@@ -59,14 +65,43 @@ class Game:
         # also self explanatory
         self.enemy_list = []
 
+        self.pentabuff = self.ctx.buffer(data=array.array('f', [
+            # pos (x, y, z), uv coords (x, y)
+            -1.0, 1.0, 0.0,   0.0, 0.0,  #topleft
+            1.0, 1.0, 0.0,   1.0, 0.0,   #topright
+            -1.0, -1.0, 0.0,   0.0, 1.0, #botleft
+            1.0, -1.0, 0.0,   1.0, 1.0,  #botright
+        ]))
+
+        with open("shaders\\frag.glsl") as file:
+            frag = file.read()
+        with open("shaders\\vert.glsl") as file:
+            vert = file.read()
+
+        self.program = self.ctx.program(vertex_shader=vert, fragment_shader=frag)
+        self.renderobject = self.ctx.vertex_array(self.program, [(self.pentabuff, '3f 2f', 'vert', 'texcoord')])
+
         # mouse track for editing a stage
         self.mousepos = list(pg.mouse.get_pos())
         self.mouse_pos = [self.mousepos[0] - 50, self.mousepos[1] - 25]
+        self.projregistry = PROJECTILE_REGISTRY(self) # a projectile registry  
+        self.soundregistry = SOUND_REGISTRY(self)
+
 
         # menu init
         self.Menu()
     
+    def surt_to_tex(self, surf):
+        tex = self.ctx.texture(surf.get_size(), 4)
+        tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        tex.swizzle = "BGRA"
+        tex.write(surf.get_view('1'))
+        return tex
+    
+    
     def exit(self):
+        self.program.release()
+        self.renderobject.release()
         pg.quit()
         sys.exit()
 
@@ -161,6 +196,11 @@ class Game:
             if ev.type == pg.MOUSEBUTTONDOWN:
                 if ev.button == 1:
                     self.enemy_list.append(self.selected_enemy(self, self.mouse_pos, self.frametime))
+            
+        frametex = self.surt_to_tex(self.screen)
+        frametex.use(0)
+        self.program['tex'] = 0
+        self.renderobject.render(mode=moderngl.TRIANGLE_STRIP)
 
         self.mousepos = pg.mouse.get_pos()
         self.mouse_pos = [self.mousepos[0] - 50, self.mousepos[1] - 25]
@@ -197,7 +237,9 @@ class Game:
                 self.createastage.update()
                 self.gobacktomenu.update()
                 self.selected_button.is_selected = True
-        pg.display.update()
+        pg.display.flip()
+
+        frametex.release()
 
         try:
             self.selected_behavior = self.allbehaviors[self.sel_b]
