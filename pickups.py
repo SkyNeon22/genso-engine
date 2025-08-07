@@ -62,15 +62,15 @@ class Full_Power_pickup(Power_pickup):
         self.draw()
 
 class Big_Power_pickup(Power_pickup):
-    def __init__(self, game, pos=(10, 300)):
-        super().__init__(game, pos)
+    def __init__(self, game, pos=(10, 300), vel=-0.2):
+        super().__init__(game, pos, vel)
         self.type = "pwr"
         self.size = [30, 30]
         self.points = 50
         if self.game.player.legacy_shots:
             self.power = 8
         else:
-            self.power = 1.0
+            self.power = 0.50
 
 class Point_pickup(Power_pickup):
     def __init__(self, game, pos=(10, 300), vel=-0.2):
@@ -101,11 +101,11 @@ class Point_pickup(Power_pickup):
         self.hitbox = pg.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
         self.draw()
 
-class Live_pickup(Power_pickup):
+class Life_pickup(Power_pickup):
     def __init__(self, game, pos=(10, 300), vel=-0.2):
         super().__init__(game, pos, vel)
-        self.points = 100000
-        self.type = "liv"
+        self.points = 100
+        self.type = "life"
     
 
     def draw(self):
@@ -115,10 +115,22 @@ class Live_pickup(Power_pickup):
 class Bomb_pickup(Power_pickup):
     def __init__(self, game, pos=(10, 300), vel=-0.2):
         super().__init__(game, pos, vel)
-        self.points = 10000
+        self.points = 100
         self.type = "bom"
     
 
     def draw(self):
         pg.draw.rect(self.game.fight_area, (255, 255, 255), pg.Rect(self.pos[0] - 2, self.pos[1] - 2, self.size[0] + 4, self.size[1] + 4))
         pg.draw.rect(self.game.fight_area, (0, 255, 0), self.hitbox)
+
+class Life_piece_pickup(Power_pickup):
+    def __init__(self, game, pos=(10, 300), vel=-0.2):
+        super().__init__(game, pos, vel)
+        self.size = [16, 16]
+        self.points = 20
+        self.type = "lifepiece"
+    
+
+    def draw(self):
+        pg.draw.rect(self.game.fight_area, (255, 255, 255), pg.Rect(self.pos[0] - 2, self.pos[1] - 2, self.size[0] + 4, self.size[1] + 4))
+        pg.draw.rect(self.game.fight_area, (255, 0, 255), self.hitbox)

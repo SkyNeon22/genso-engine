@@ -4,13 +4,15 @@ from yinyangs import *
 
 
 class Player:
-    def __init__(self, game, pos=(190, 400)):
+    def __init__(self, game, pos=(194, 300), start_power=0.0):
         self.game = game
         self.unfocus_speed = 0.73
         self.focus_speed = 0.4
         self.speed = self.unfocus_speed
 
         self.lives = 2
+        self.life_pieces = 0
+        self.piecesforlife = 3
         self.max_lives = 8
         self.bombs = 3
         self.max_bombs = 8
@@ -40,7 +42,7 @@ class Player:
             self.power = 0
             self.max_power = 128
         else:
-            self.power = 0.0
+            self.power = start_power
             self.max_power = 4.0
 
         self.item_slow_rate = 0.11
@@ -75,29 +77,26 @@ class Player:
         self.hitbox = pg.Rect(self.pos[0] + 13, self.pos[1] + 17, 10, 10)
         self.graze_hitbox = pg.Rect(self.pos[0], self.pos[1], self.graze_hitbox_img.get_width(), self.graze_hitbox_img.get_height())
         self.iframes = 0
-        self.ifmax = 1000
+        self.ifmax = 200
     
     def bomb(self):
         self.bombs -= 1
-        self.iframes = 400
+        self.iframes = 180 
         self.game.player_proj.append(Bomb(self.game, (self.hitbox.x - self.hitbox.x / 2, self.hitbox.y)))
-        for bul in self.game.proj_list:
-            if bul.team == "en":
-                bul.kill = True
     
     def movement(self):
         keys = pg.key.get_pressed()
         if self.deathbombc <= -1:
-            if keys[pg.K_UP] and self.pos[1] >= 0:
+            if keys[pg.K_UP] and self.pos[1] >= -10:
                     self.pos[1] -= self.speed
                     self.animstate = "I"
-            if keys[pg.K_DOWN] and self.pos[1] <= 605:
+            if keys[pg.K_DOWN] and self.pos[1] <= 416:
                     self.pos[1] += self.speed
                     self.animstate = "I"
-            if keys[pg.K_LEFT] and self.pos[0] >= 0:
+            if keys[pg.K_LEFT] and self.pos[0] >= -10:
                     self.pos[0] -= self.speed
                     self.animstate = "L"
-            if keys[pg.K_RIGHT] and self.pos[0] <= 370:
+            if keys[pg.K_RIGHT] and self.pos[0] <= 358:
                     self.pos[0] += self.speed
                     self.animstate = "R"
             if keys[pg.K_LSHIFT] or keys[pg.K_RSHIFT]:
@@ -170,12 +169,13 @@ class Player:
                         self.game.player_proj.append(self.shot_type(self.game, (self.hitbox.x - 12, self.hitbox.y - 25), direction=(0, -1)))
                         if len(self.yinyangs) > 0:
                             if self.homing_cooldown <= 0:
+                                
                                 for yin in self.yinyangs:
                                     yin.shoot()
                                 self.homing_cooldown = self.homing_shot_cooldown
                         self.cooldown = self.shot_cooldown
         if keys[pg.K_x]:
-            if self.bomb_cooldown <= 0 and self.bombs > 0: 
+            if self.bomb_cooldown <= 0 and self.bombs >= 1: 
                 self.bomb()
                 self.bomb_used = True
                 self.bomb_cooldown = 2.0
@@ -190,6 +190,8 @@ class Player:
 
     def if_hit(self):
         self.lives -= 1
+        if self.power >= 0.50:
+            self.power -= 0.50
         self.bombs = 3
         self.pos = list(self.start_pos)
         self.game.proj_list = []
@@ -198,7 +200,7 @@ class Player:
     def check_hit(self):
         if self.deathbombc <= -10:
             for enemy in self.game.enemy_list:
-                if self.hitbox.colliderect(enemy.hitbox) and enemy.col_dmg:
+                if self.hitbox.colliderect(enemy.hitbox) and enemy.col_dmg and self.game.frametime >= enemy.time:
                     if self.iframes <= 0:
                         self.deathbombc = self.deathbomb
                         return True
@@ -213,25 +215,36 @@ class Player:
         is_hit = self.check_hit()
         if is_hit or self.deathbombc >= 0:
             if self.iframes <= 0:
+                self.game.soundregistry.get("pl_death").play()
                 self.bomb_used = False
                 if self.deathbombc == 0 and not self.bomb_used:
                     self.if_hit()
+                    self.game.soundregistry.get("pl_death").reload()
                 elif self.bomb_used and self.deathbombc == 0:
                     self.iframes = 100
+                    self.game.soundregistry.get("pl_death").reload()
         for pickup in self.game.pickup_list:
             if self.graze_hitbox.colliderect(pickup.hitbox):
                 if pickup.type == "pwr":
                     if self.power < self.max_power:
                         self.power += pickup.power
-                        pickup.power -= pickup.power
                     self.game.score += pickup.points
                     pickup.kill = True
                 if pickup.type == "col":
                     self.game.score += pickup.points
                     pickup.kill = True
-                if pickup.type == "liv":
+                if pickup.type == "life":
                     self.game.score += pickup.points
                     self.lives += 1
+                    pickup.kill = True
+                if pickup.type == "lifepiece":
+                    self.game.score += pickup.points
+                    if self.life_pieces > self.piecesforlife - 1 and self.lives < self.max_lives: # - 1 required to register the extend when life piece count gets to the count for giving a life
+                        self.lives += 1
+                        self.life_pieces = 0
+                        self.game.soundregistry.get("extend").play()
+                    else:
+                        self.life_pieces += 1
                     pickup.kill = True
                 if pickup.type == "bom":
                     self.bombs += 1
@@ -254,6 +267,8 @@ class Player:
             self.bomb_used = False
         self.deathbombc -= 1
         self.iframes -= 1
+        if self.power <= 0.99:
+            self.yinyangs = []
         if self.focus == True:
             self.speed = self.focus_speed
             if self.power >= 1.0 and self.power <= 1.99:
@@ -263,6 +278,7 @@ class Player:
             if self.power >= 3.0 and self.power <= 3.99:
                 self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_3[0], self.hitbox.y + self.focus_yin_offset_p_3[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_3[2], self.hitbox.y + self.focus_yin_offset_p_3[3])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_3[4], self.hitbox.y + self.focus_yin_offset_p_3[5]))]
             if self.power >= 4.0:
+                self.power = 4.0
                 self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[0], self.hitbox.y + self.focus_yin_offset_p_4[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[2], self.hitbox.y + self.focus_yin_offset_p_4[3])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[4], self.hitbox.y + self.focus_yin_offset_p_4[5])),self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[6], self.hitbox.y + self.focus_yin_offset_p_4[7]))]
         else:
             self.speed = self.unfocus_speed
@@ -292,8 +308,8 @@ class Player:
         self.movement()
 
 class ReimuA(Player):
-    def __init__(self, game, pos=(190, 400)):
-        super().__init__(game, pos)
+    def __init__(self, game, pos=(190, 400), start_power=0.0):
+        super().__init__(game, pos, start_power)
         self.deathbomb = 24
         self.yinyang = YingYangReimuA
         self.shot_type = ReimuShotNormal
@@ -313,8 +329,8 @@ class ReimuA(Player):
         self.focus_yin_offset_p_4 = [18, -30, -25, -30, 18, 30, -25, 30]
 
 class ReimuB(Player):
-    def __init__(self, game, pos=(190, 400)):
-        super().__init__(game, pos)
+    def __init__(self, game, pos=(190, 400), start_power=0.0):
+        super().__init__(game, pos, start_power)
         self.deathbomb = 24
         self.unfocus_speed = 2.17
         self.focus_speed = 0.83
@@ -334,8 +350,8 @@ class ReimuB(Player):
         self.yin_offset_p_4 = [28, -30, -35, -30, 48, 30, -55, 30]
 
 class ReimuC(Player):
-    def __init__(self, game, pos=(190, 400)):
-        super().__init__(game, pos)
+    def __init__(self, game, pos=(190, 400), start_power=0.0):
+        super().__init__(game, pos, start_power)
         self.deathbomb = 24
         self.unfocus_speed = 2.17
         self.focus_speed = 0.83
@@ -354,8 +370,8 @@ class ReimuC(Player):
         self.yin_offset_p_4 = [28, -30, -35, -30, 48, 30, -55, 30]
 
 class MarisaA(Player):
-    def __init__(self, game, pos=(190, 400)):
-        super().__init__(game, pos)
+    def __init__(self, game, pos=(190, 400), start_power=0.0):
+        super().__init__(game, pos, start_power)
         self.size = (29, 43)
         self.speed = 0.85
         self.focus_speed = 1.58
@@ -377,8 +393,8 @@ class MarisaA(Player):
         self.yin_offset_p_4 = [28, -0, -35, -0, 18, 0, -25, 0]
     
 class MarisaB(Player):
-    def __init__(self, game, pos=(190, 400)):
-        super().__init__(game, pos)
+    def __init__(self, game, pos=(190, 400), start_power=0.0):
+        super().__init__(game, pos, start_power)
         self.size = (31, 48)
         self.speed = 0.85
         self.focus_speed = 1.58
@@ -403,8 +419,8 @@ class MarisaB(Player):
     
 
 class SanaeA(Player):
-    def __init__(self, game, pos=(190, 400)):
-        super().__init__(game, pos)
+    def __init__(self, game, pos=(190, 400), start_power=0.0):
+        super().__init__(game, pos, start_power)
         self.item_slow_rate = 0.25
         self.shot_type = SanaeShotNormal
         self.secondary = SanaeWaveNormal

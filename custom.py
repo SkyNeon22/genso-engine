@@ -1,7 +1,7 @@
 # Custom is a program for editing game setting
 # Custom це програма для зміни налаштуваннь гри
 import tkinter
-from settings import RES
+from configs.settings import RES
 
 window = tkinter.Tk("Custom")
 window.geometry("450x800")

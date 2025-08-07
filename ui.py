@@ -30,11 +30,14 @@ class Bar:
         self.bar_len = 0
         self.bar_color = (200, 200, 200)
         self.bar_size_mul = 3.5
+    
+    def draw_text(self):
+        text_surface = self.font.render(self.text, False, self.color)
+        self.drawsurf.blit(text_surface, self.pos)
 
     def draw(self):
         pg.draw.rect(self.drawsurf, self.bar_color, [self.pos[0], self.pos[1], self.bar_len, self.size * self.bar_size_mul])
-        text_surface = self.font.render(self.text, False, self.color)
-        self.drawsurf.blit(text_surface, self.pos)
+        self.draw_text()
 
     def update(self):
         self.draw()

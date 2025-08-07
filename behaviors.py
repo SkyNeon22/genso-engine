@@ -24,6 +24,25 @@ class MoveInDirection(Behavior):
         self.target.pos[1] += self.direction[1] * self.target.speed
 
 
+class MoveToPos(Behavior):
+    def __init__(self, game, target, pos=(0, 0)):
+        super().__init__(game, target)
+        self.pos = pos
+    
+    def tick(self):
+        if self.target.pos[0] < self.pos[0]:
+            self.target.pos[0] += self.target.speed
+        elif self.target.pos[0] > self.pos[0]:
+            self.target.pos[0] -= self.target.speed
+        else:
+            self.target.pos[0] += 0
+        if self.target.pos[1] < self.pos[1]:
+            self.target.pos[1] += self.target.speed
+        elif self.target.pos[1] > self.pos[1]:
+            self.target.pos[1] -= self.target.speed
+        else:
+            self.target.pos[1] -= self.target.speed 
+
 
 class MoveByPoints(Behavior):
     def __init__(self, game, target, waypoints=[(0, 0), (250, 250)]):

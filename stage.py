@@ -2,17 +2,19 @@ import pygame
 from ui import *
 import json
 import logging
+import enemy
 
 logging.basicConfig(filename="log.log")
 
-class MAP:
-    def __init__(self, game, mapfile="test.stage"):
+class StageSystem:
+    def __init__(self, game, mapfile="test.stg"):
         self.game = game
         self.mapfile = mapfile
-        self.premidbossenemies = []
-        self.midboss = None
-        self.prebossenemies = []
-        self.stageboss = None
+        #self.premidbossenemies = []
+        #self.midboss = None
+        #self.prebossenemies = []
+        #self.stageboss = None
+        self.enemies = []
         logging.info("initialized a stage system")
     
     def load(self):
@@ -28,13 +30,35 @@ class MAP:
 
     def init_map(self):
         logging.info(f"stage '{self.mapfile}' loading into the memory")
-        raw = self.load()
         temp = []
+        temp2 = None
+        raw = self.load()
+        for rc in raw:
+            # if statement hell, I would try to find a solution cuz stages would load VERY SLOWLY if left untouched
+            if rc.get("type") == "enemy":
+                temp2 = enemy.Enemy.fromdict(asset=rc)
+                temp2.game = self.game
+                temp.append(temp2)
+            elif rc.get("type") == "whiteflame":
+                temp2 = enemy.WhiteFlame.fromdict(asset=rc)
+                temp2.game = self.game
+                temp.append(temp2)
+            elif rc.get("type") == "testboss":
+                temp2 = enemy.Testboss.fromdict(asset=rc, game=self.game)
+                temp.append(temp2)
+        return temp
 
     def save(self):
         with open(f'stages/{self.mapfile}', 'w') as file:
             temp = []
+            for enemy in self.enemies:
+                t = enemy.todict()
+                temp.append(t)
             json.dump(temp, file)
     
     def update(self):
         pass
+
+if __name__ == "__main__":
+    stg = StageSystem(None)
+    stg.init_map()

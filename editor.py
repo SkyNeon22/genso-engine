@@ -7,7 +7,7 @@ from character import *
 from enemy import Enemy, WhiteFlame, Testboss
 from pickups import *
 from ui import *
-from settings import *
+from configs.settings import *
 from stage import *
 from behaviors import *
 
@@ -15,19 +15,21 @@ from behaviors import *
 import random
 
 
+# dont forget 1 second = 60 ticks
 class Game:
     def __init__(self):
         pg.init()
-        self.screen = pg.display.set_mode((RES))
+        self.screen = pg.display.set_mode((RES_EDITOR))
         pg.display.set_caption("TH 69")
         self.clock = pg.time.Clock()
 
         #self.enemy_cooldown = 1000.0
         #self.cooldown = 1000.0
 
-        self.time = 0
+        self.frametime = 0 # in ticks
+        # enemies and behaviors
         self.allenemies = [Enemy, WhiteFlame, Testboss]
-        self.allbehaviors = [MoveByPoints]
+        self.allbehaviors = [MoveByPoints, MoveInDirection]
 
         self.sel_b = 0
         self.sel_e = 0
@@ -35,24 +37,33 @@ class Game:
         self.selected_behavior = self.allbehaviors[self.sel_b]
         self.selected_enemy = self.allenemies[self.sel_e]
 
-        #self.difficulties = ("Easy","Normal","Hard","Lunatic","Extra")
-        #self.diff = self.difficulties[3]
+        # if you want to make different stages for different diffs
+        self.difficulties = ("Easy","Normal","Hard","Lunatic","Extra")
+        self.diff = self.difficulties[3]
         #self.min_rank = 5
         #self.rank = 5
         #self.max_rank = 34
 
+        # self explanatory
         self.stagename = None
 
+        self.stgsystem = StageSystem(self)
+
+        # menu
         self.in_menu = True
         self.in_select_menu = False
 
+        # area visible to the player(for preview, not scaled for easier enemy placement)
         self.fight_area = pg.Surface((400, 650))
 
+        # also self explanatory
         self.enemy_list = []
 
+        # mouse track for editing a stage
         self.mousepos = list(pg.mouse.get_pos())
         self.mouse_pos = [self.mousepos[0] - 50, self.mousepos[1] - 25]
 
+        # menu init
         self.Menu()
     
     def exit(self):
@@ -67,7 +78,8 @@ class Game:
     def create_a_stage(self, character):
         self.Character = character
         self.new_game()
-    
+     
+    # creating a stage menu
     def select_character_menu(self):
         self.in_select_menu = True
         self.in_menu = False
@@ -78,6 +90,7 @@ class Game:
         self.selected_button = self.menu_list[self.menu_ui_selected]
         self.selected_button.is_selected = True
     
+    # menu init
     def Menu(self):
         self.start_the_game = Selectable_Text(self, (70, 300), text="Game Start", on_use=self.select_character_menu)
         self.settings = Selectable_Text(self, (50, 330), text="Settings")
@@ -86,19 +99,29 @@ class Game:
         self.menu_ui_selected = 0
         self.selected_button = self.menu_list[self.menu_ui_selected]
 
+    # ignore the func names cuz they are not changed
     def new_game(self):
         self.in_select_menu = False
         self.in_menu = False
+        try:
+            self.enemy_list = self.stgsystem.init_map()
+        except TypeError:
+            self.enemy_list = [] 
+            
 
         #ui
         self.enemy_count_text = Text(self, (500, 80), text=f"Enemies in the stage: {len(self.enemy_list)}")
         self.sb_mm_text = Text(self, (500, 100), text=f"Selected Behavior: {self.selected_behavior}")
         self.se_mm_text = Text(self, (500, 120), text=f"Selected Enemy: {self.selected_enemy}")
-        self.st_mm_text = Text(self, (500, 140), text=f"Time: {self.time}")
+        self.st_mm_text = Text(self, (500, 140), text=f"Time(in ticks): {self.frametime}")
 
+    # update
     def update(self):
+        # input checks
         for ev in pg.event.get():
             if ev.type == pg.QUIT:
+                self.stgsystem.enemies = self.enemy_list
+                self.stgsystem.save()
                 self.exit()
             if ev.type == pg.KEYDOWN:
                 if ev.key == pg.K_F5:
@@ -126,21 +149,27 @@ class Game:
                         self.sel_e -= 1
                     if ev.key == pg.K_RIGHT:
                         self.sel_e += 1
-                    if ev.key == pg.K_LALT:
-                        self.time -= 1
-                    if ev.key == pg.K_RALT:
-                        self.time += 1
+                    if ev.type == pg.KEYDOWN:
+                        if ev.key == pg.K_LSHIFT:
+                            self.frametime -= 60
+                        if ev.key == pg.K_RSHIFT:
+                            self.frametime += 60
+                        if ev.key == pg.K_LALT:
+                            self.frametime -= 1
+                        if ev.key == pg.K_RALT:
+                            self.frametime += 1
             if ev.type == pg.MOUSEBUTTONDOWN:
                 if ev.button == 1:
-                    self.enemy_list.append(self.selected_enemy(self, self.mouse_pos, self.time))
+                    self.enemy_list.append(self.selected_enemy(self, self.mouse_pos, self.frametime))
 
         self.mousepos = pg.mouse.get_pos()
-        self.mouse_pos =[self.mousepos[0] - 50, self.mousepos[1] - 25]
+        self.mouse_pos = [self.mousepos[0] - 50, self.mousepos[1] - 25]
 
         self.screen.fill((0, 0, 0))
         if not self.in_menu and not self.in_select_menu:
             self.screen.fill((0, 80, 10))
 
+            #self.screen.blit(pg.transform.scale(self.fight_area, (570, 730)), (50, 25))
             self.screen.blit(self.fight_area, (50, 25))
             self.fight_area.fill((0, 0, 0))
 
@@ -150,7 +179,7 @@ class Game:
             self.enemy_count_text.text = f"Enemies in the stage: {len(self.enemy_list)}"
             self.sb_mm_text.text = f"Selected Behavior: {self.selected_behavior}"
             self.se_mm_text.text = f"Selected Enemy: {self.selected_enemy}"
-            self.st_mm_text.text = f"Time: {self.time}"
+            self.st_mm_text.text = f"Time(in ticks): {self.frametime}"
             self.se_mm_text.update()
             self.sb_mm_text.update()
             self.st_mm_text.update()
@@ -184,4 +213,5 @@ class Game:
 if __name__ == "__main__":
     game = Game()
     game.stagename = input("Input a stage name(if you modifying a game stage, write a number between 1-7): ")
+    game.stgsystem.mapfile =  f"{game.stagename}.stg"
     game.run()
