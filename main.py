@@ -1,18 +1,14 @@
 # Core
-import pygame as pg
 import sys
-import moderngl
+import moderngl as mgl
+import numpy as np
 import array
 
 # From
-from character import *
-from pickups import *
-from ui import *
-from configs.settings import *
-from spellcards import *
-from stage import *
-from utils.registries import *
-from components.sound import *
+from core import *
+from core.additions import *
+from configs.config import *
+from core.game.registries import *
 
 # Mics
 import random
@@ -20,21 +16,35 @@ import random
  
 class Game:
     def __init__(self):
-        pg.init()
-        pg.mixer.init()
-        self.window = pg.display.set_mode((RES), pg.OPENGL | pygame.DOUBLEBUF)
-        self.screen = pg.surface.Surface((RES))
-        pg.display.set_caption("TH 69")
+        pginit()
+        self.window = pg.display.set_mode((RES), pg.OPENGL | pygame.DOUBLEBUF | pg.SRCALPHA | pg.BLEND_ADD)
+        self.screen = pg.surface.Surface((RES), pg.SRCALPHA, depth=32)# .convert_alpha()
+        pg.display.set_caption("TH 69") 
         self.clock = pg.time.Clock()
-        self.ctx = moderngl.create_context()
+        self.ctx = mgl.create_context()
+        self.ctx.enable(flags=mgl.BLEND | mgl.DEPTH_TEST)
+        self.ctx.blend_func = self.ctx.DEFAULT_BLENDING
+        self.ctx.gc_mode = 'auto'   
+
+        self.gamebg = pg.image.load("assets/img/gamebg.png")
+        
+        self.program = ShaderProgram(self.ctx)
+
+        pg.mouse.set_visible(False)
+        pg.event.set_grab(True)
+
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, 3)
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, 3)
+        pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_CORE, pg.GL_CONTEXT_PROFILE_MASK)
 
         self.frametime = 0
         self.bossfight = False
-
+ 
         self.difficulties = ("Easy","Normal","Hard","Lunatic","Extra")
         self.diff = self.difficulties[2]
         self.min_rank = 5
         self.rank = 5
+
         self.max_rank = 34
 
         self.Character = None
@@ -57,19 +67,13 @@ class Game:
 
         self.pentabuff = self.ctx.buffer(data=array.array('f', [
             # pos (x, y, z), uv coords (x, y)
-            -1.0, 1.0, 0.0,   0.0, 0.0,  #topleft
-            1.0, 1.0, 0.0,   1.0, 0.0,   #topright
-            -1.0, -1.0, 0.0,   0.0, 1.0, #botleft
-            1.0, -1.0, 0.0,   1.0, 1.0,  #botright
+            -1.0, 1.0, 0.0,   0.0, 0.0, 1.0,   #topleft
+            1.0, 1.0, 0.0,   1.0, 0.0, 1.0,    #topright
+            -1.0, -1.0, 0.0,   0.0, 1.0, 1.0,  #botleft
+            1.0, -1.0, 0.0,   1.0, 1.0, 1.0,   #botright
         ]))
 
-        with open("shaders\\frag.glsl") as file:
-            frag = file.read()
-        with open("shaders\\vert.glsl") as file:
-            vert = file.read()
-
-        self.program = self.ctx.program(vertex_shader=vert, fragment_shader=frag)
-        self.renderobject = self.ctx.vertex_array(self.program, [(self.pentabuff, '3f 2f', 'vert', 'texcoord')])
+        self.renderobject = self.ctx.vertex_array(self.program.programs["2dsurf"], [(self.pentabuff, '3f 3f', 'vert', 'texcoord')])
 
         self.stage = "1.stg"
         self.stagesystem = StageSystem(game=self, mapfile=self.stage)
@@ -79,14 +83,16 @@ class Game:
         self.Menu()
     
     def surt_to_tex(self, surf):
-        tex = self.ctx.texture(surf.get_size(), 4)
-        tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        tex = self.ctx.texture(surf.get_size(), 4, dtype="f1")
+        tex.filter = (mgl.NEAREST, mgl.NEAREST)
         tex.swizzle = "BGRA"
-        tex.write(surf.get_view('1'))
+        b = np.array(surf.get_view('1'))
+        tex.write(b.tobytes())
         return tex
     
+    
     def exit(self):
-        self.program.release()
+        self.program.destroy()
         self.renderobject.release()
         pg.quit()
         sys.exit()
@@ -128,7 +134,7 @@ class Game:
         self.in_select_menu = False
         self.in_menu = False
         self.player = self.Character(self, pos=(194, 350),start_power=4.0)
-        self.enemy_list = self.stagesystem.init_map()
+        self.enemy_list = self.stagesystem.init_map(self.stage)
 
         #ui
         self.lives_text = Text(self, (420, 80), text=f"Lives {self.player.lives}", size=25)
@@ -141,21 +147,23 @@ class Game:
         self.spell_text = Text(self, (200, 20), text=f"", size=15)
         #self.spell_text = Text(self, (200, 30))
         #self.spell_text.drawsurf = self.fight_area
-        self.boss_hp = Bar(self, (3, 5),size=5, text=f"{self.enemy_list[0].hp}")
-        self.boss_hp.drawsurf = self.fight_area
+        self.boss_hp = Bar(self, (3, 5),size=5, text=f"{self.enemy_list[0].hp}" if len(self.enemy_list) else "")
+        self.boss_hp.drawsurf = self.fight_area 
 
     def update(self):
         for ev in pg.event.get():
             if ev.type == pg.QUIT:
                 self.exit()
             if ev.type == pg.KEYDOWN:
-                if ev.key == pg.K_F5:
+                if ev.key == pg.K_F5:  
                     pg.display.toggle_fullscreen()
                 if ev.key == pg.K_ESCAPE:
                     self.is_paused = not self.is_paused
                     if self.is_paused:
                         self.soundregistry.get("pause").play()
                         self.soundregistry.get("pause").reload()
+                if ev.key == pg.K_BACKSPACE: 
+                    self.exit()
                 if self.in_menu or self.in_select_menu:
                     if ev.key == pg.K_z:
                         if self.selected_button.args == None:
@@ -183,6 +191,12 @@ class Game:
                         self.Character = MarisaB
                     if ev.key == pg.K_6:
                         self.Character = SanaeA
+                    if ev.key == pg.K_8:
+                        self.stage = "1.stg"
+                    if ev.key == pg.K_9:
+                        self.stage = "2.stg"
+                    if ev.key == pg.K_0:
+                        self.stage = "4.stg"
                     if ev.key == pg.K_r:
                         self.score = 0
                         self.enemy_list = []
@@ -193,20 +207,24 @@ class Game:
                         self.new_game()
                         self.is_paused = False
 
+        self.ctx.clear(0.1, 0.2, 0.2)
+
         frametex = self.surt_to_tex(self.screen)
         frametex.use(0)
-        self.program['tex'] = 0
-        self.renderobject.render(mode=moderngl.TRIANGLE_STRIP)
+        self.program.programs["2dsurf"]['tex'] = 0
+        self.renderobject.render(mode=mgl.TRIANGLE_STRIP)
         
-        self.screen.fill((0, 0, 0))
-
+        self.screen.fill((0, 0, 0, 0))
+ 
         pg.display.set_caption(f"{self.clock.get_fps()}")
 
         if not self.in_menu and not self.in_select_menu:
-                self.screen.fill((0, 80, 10))
+                self.screen.fill((0, 0, 0, 0))
+
+                self.screen.blit(self.gamebg, (0, 0))
 
                 self.screen.blit(self.fight_area, (32, 16))
-                self.fight_area.fill((0, 0, 0, 255))
+                self.fight_area.fill((0, 0, 0, 0))
 
                 if self.active_spell != None:
                     self.spell_text.text = self.active_spell
@@ -267,7 +285,7 @@ class Game:
                             pickup.vel = self.player.item_slow_rate
                         if pickup.pos[1] >= 800:
                             self.pickup_list.remove(pickup)
-                        if pickup.kill:
+                        if pickup.kill: 
                             self.pickup_list.remove(pickup)
                         if self.player.pos[1] <= 100:
                             pickup.pos = self.player.pos
@@ -296,7 +314,7 @@ class Game:
                                 self.enemy_list.remove(enemy) 
                     
                     if self.player.focus == True:
-                        self.fight_area.blit(self.player.hitbox_img, (self.player.hitbox.x, self.player.hitbox.y))
+                        self.fight_area.blit(pg.transform.scale(self.player.hitbox_img, self.player.hitboxsize), (self.player.hitbox.x, self.player.hitbox.y))
                     self.frametime += 1
                     
         else:

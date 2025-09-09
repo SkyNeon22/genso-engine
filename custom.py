@@ -1,18 +1,26 @@
 # Custom is a program for editing game setting
-# Custom це програма для зміни налаштуваннь гри
 import tkinter
-from configs.settings import RES
+import pymsgbox
+from configs.config import RES
 
-window = tkinter.Tk("Custom")
-window.geometry("450x800")
+window = tkinter.Tk(className="Custom")
+window.geometry("320x480")
 
 def save():
-    pass
+    window.quit()
 
-res_input = tkinter.Entry(window, )
-savebutton = tkinter.Button(window, command=None)
+def cancel():
+    window.quit()
 
-res_input.pack()
-savebutton.place(760, 225)
+savebutton = tkinter.Button(window,
+                            command=save,
+                            text="Save config")
+
+cancelbutton = tkinter.Button(window,
+                            command=quit,
+                            text="Cancel")
+
+savebutton.place(x=244, y=450)
+cancelbutton.place(x=190, y=450)
 
 window.mainloop()

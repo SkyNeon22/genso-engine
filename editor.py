@@ -5,15 +5,8 @@ import moderngl
 import array
 
 # From
-from character import *
-from enemy import Enemy, WhiteFlame, Testboss
-from pickups import *
-from ui import *
-from configs.settings import *
-from stage import *
-from behaviors import *
-from utils.registries import *
-from components.sound import *
+from core import *
+from configs.config import *
 
 # Mics
 import random
@@ -60,7 +53,7 @@ class Game:
         self.in_select_menu = False
 
         # area visible to the player(for preview, not scaled for easier enemy placement)
-        self.fight_area = pg.Surface((400, 650))
+        self.fight_area = pg.Surface((384, 448))
 
         # also self explanatory
         self.enemy_list = []
@@ -73,9 +66,9 @@ class Game:
             1.0, -1.0, 0.0,   1.0, 1.0,  #botright
         ]))
 
-        with open("shaders\\frag.glsl") as file:
+        with open("shaders\\2dsurf.frag") as file:
             frag = file.read()
-        with open("shaders\\vert.glsl") as file:
+        with open("shaders\\2dsurf.vert") as file:
             vert = file.read()
 
         self.program = self.ctx.program(vertex_shader=vert, fragment_shader=frag)
