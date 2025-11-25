@@ -9,7 +9,6 @@ class Texture:
         self.textures[0] = self.get_texture_rgba(path='assets/img/textures/img.png')
         self.textures[1] = self.get_texture_rgba(path='assets/img/textures/img_1.png')
         self.textures[2] = self.get_texture_rgba(path='assets/img/textures/img_2.png')
-        self.textures['cat'] = self.get_texture_rgba(path='assets/objects/cat/20430_cat_diff_v1.jpg')
         self.textures['tower'] = self.get_texture_rgba(path='assets/img/textures/tower.png')
 
     
@@ -39,4 +38,5 @@ class Texture:
         return texture
 
     def destroy(self):
+
         [tex.release() for tex in self.textures.values()]
