@@ -311,5 +311,5 @@ if __name__ == '__main__':
     if stg_path == '':
         editor = EDITOR()
     else:
-        editor = EDITOR(stg_path=f"assets/stages/{stg_path}")
+        editor = EDITOR(stg_path=f"{stg_path}")
     editor.run()

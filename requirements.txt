@@ -1,0 +1,6 @@
+pywavefront
+pygame
+numpy
+moderngl
+opengl # cuz why not
+pyglm
