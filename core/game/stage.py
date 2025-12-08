@@ -12,7 +12,6 @@ class StageSystem:
         self.game = game
         self.mapfile = mapfile
         self.stgdir = stagedirectory
-        self.dialoguetriggercount = -1
         self.map = self.load(self.mapfile)
         self.enemies = self.init_enemies(self.mapfile)
         self.triggers = self.init_triggers(self.mapfile)
@@ -40,11 +39,8 @@ class StageSystem:
                     temp2 = trigger.MoveCameraToDestPos.fromdict(rc, self.game.camera)
                     temp.append(temp2)
                 elif rc.get("type") == "dialogueactivate":
-                    self.dialoguetriggercount += 1
                     temp2 = trigger.DialogueActivate.fromdict(rc, self.game)
-                    temp2.dialoguenum = self.dialoguetriggercount
                     temp.append(temp2)
-            self.dialoguetriggercount = -1
             return temp
         else:
             return []

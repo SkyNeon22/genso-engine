@@ -27,10 +27,10 @@ class Trigger:
     def reserved(self): ...
 
 class DialogueActivate(Trigger):
-    def __init__(self, game, **kwargs):
+    def __init__(self, game, dialoguenum=0, **kwargs):
         super().__init__(**kwargs)
         self.game = game
-        self.dialoguenum = 0
+        self.dialoguenum = dialoguenum
         self.armed = True
         self.type = "dialogueactivate"
     
@@ -38,11 +38,12 @@ class DialogueActivate(Trigger):
         return {"startframetime": self.startframetime,
                 "endframetime": self.endframetime,
                 "type": self.type,
+                "dialoguenum": self.dialoguenum,
                 }
 
     @classmethod
     def fromdict(cls, asset, game):
-        return cls(game, startframetime=asset['startframetime'], endframetime=asset['endframetime'])
+        return cls(game, startframetime=asset['startframetime'], endframetime=asset['endframetime'], dialoguenum=asset["dialoguenum"])
     
     def update(self):
         if self.game.frametime >= self.startframetime and self.armed:
