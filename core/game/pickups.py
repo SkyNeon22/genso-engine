@@ -105,7 +105,7 @@ class Point_pickup(Power_pickup):
         self.pos[1] += self.vel
         self.vel += 0.0062
         self.center = (self.pos[0] + (self.size[0] // 2), self.pos[1] + (self.size[1] // 2))
-        self.hitbox.update()
+        self.hitbox.update(self.center)
         self.draw()
 
 class Life_pickup(Power_pickup):
@@ -143,4 +143,5 @@ class Life_piece_pickup(Power_pickup):
 
     def draw(self):
         pg.draw.rect(self.game.fight_area, (255, 255, 255), pg.Rect(self.pos[0] - 2, self.pos[1] - 2, self.size[0] + 4, self.size[1] + 4))
+
         pg.draw.rect(self.game.fight_area, (255, 0, 255), pg.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1]))
