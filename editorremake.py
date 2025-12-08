@@ -13,13 +13,22 @@ from configs.config import *
 import random
 from core.game_skele import *
 
+def test_stg_file(stg_name="1.stg"):
+    try:
+        with open(f"assets\stages\{stg_name}") as file:
+            return True
+    except FileNotFoundError:
+        return False
+
+def create_stg_file(stg_name=None):
+    with open(f"assets\stages\{stg_name}", "w") as file:
+        file.write("""{"enemies":{}, "triggers":{}}""")
+
 # The New(TM) Editor for Genso Engine v0.1.0
 # No comments of explaining are not provided (maybe someday will be)
 class EDITOR(AdvancedGameClass):
-    def __init__(self, window_caption="Genso Engine v0.1.0 Prototype Game (Advanced Template)", stg_path="assets/stages/1.stg"):
-        super().__init__(window_caption)
-        self.helptext1 = "Help:F1,Inspector:F2,Editor:F3,Save/Load:F9/F10,Disable Mousepos/Camera:F11/F12"
-        self.helptext2 = "Set 3D Position Arg:End, Set startframetime/endframetime:K/L, Set trigger:M"
+    def __init__(self, window_caption="Genso Engine v0.1.0 Prototype Game (Advanced Template)", stg_path="assets/stages/1.stg", win_size=(1440, 900)):
+        super().__init__(window_caption, win_size=win_size)
         self.helptext = Text(self, pos=(0, 460), size=16, text="Help:F1,Inspector:F2,Editor:F3,Save/Load:F9/F10,Disable Mousepos/Camera:F11/F12")
 
         self.frametime_text = Text(self, size=20)
@@ -28,6 +37,8 @@ class EDITOR(AdvancedGameClass):
 
         self.camera_editor = False
 
+        self.dialoguenum = 0
+
         self.mousepostext = Text(self, pos=(0, 0), size=20, text=str(pg.mouse.get_pos()))
 
         self.args = []
@@ -35,6 +46,10 @@ class EDITOR(AdvancedGameClass):
 
         self.stage = stg_path
         self.stagesystem.mapfile = self.stage
+
+        self.scene_manager.add_scene("test", Scene(self, self.scene_manager))
+        self.scene_manager.current_scene = "test"
+        self.scene_manager.scenes[f"{self.scene_manager.current_scene}"].add_object(Tower(self, scenemanager=self.scene_manager, rot=(0, 0, 0)))
 
 
         self.inspectorinit()
@@ -48,7 +63,7 @@ class EDITOR(AdvancedGameClass):
 
         self.enemies = ["enemy", "testboss"]
         self.behaviors = ["none", "movebypoints"]
-        self.triggers = ["movetopos", "dialoguestart"]
+        self.triggers = ["dialoguestart"]
         self.selected_enemy = 0
         self.selected_behavior = 0
 
@@ -74,11 +89,14 @@ class EDITOR(AdvancedGameClass):
     
     def enemy_editor_open(self):
         self.menu.change_current_menu("enemy_editor")
+        self.helptext.text = "Help:F1,Inspector:F2,Editor:F3,Right Click: Set Marker"
     
     def trigger_editor_open(self):
         self.menu.change_current_menu("trigger_editor")
+        self.helptext.text = "Help:F1,Inspector:F2,Editor:F3,Disable Mousepos/Camera Editor:F11/F12"
     
     def open_camera_editor(self):
+        self.helptext.text = "Set3DPositionArg/CameraRotationArg:End/Insert,SetSetTriggerStart/TriggerEnd:K/L,SetMoveTrigger/RotateTrigger:M/N"
         self.args = []
         self.camera.disabled_movement = False
         self.camera_editor = True
@@ -171,6 +189,8 @@ class EDITOR(AdvancedGameClass):
         self.menu.menus['trigger_editor_menu'].elements.append(MenuText(self, pos=(420, 5), size=20, text="Trigger Add Editor"))
         self.menu.menus['trigger_editor_menu'].selectable_elements.append(MenuSelectableText(self, pos=(450, 50), size=20, text="Selected Trigger:"))
         self.menu.menus['trigger_editor_menu'].elements.append(MenuText(self, pos=(450, 75), size=20, text=""))
+        self.menu.menus['trigger_editor_menu'].selectable_elements.append(MenuSelectableText(self, pos=(450, 100), size=20, text="Num Arg:"))
+        self.menu.menus['trigger_editor_menu'].elements.append(MenuText(self, pos=(450, 125), size=20, text=""))
     
     def render_args(self):
         if len(self.args) >= 1:
@@ -196,10 +216,13 @@ class EDITOR(AdvancedGameClass):
 
                 # The Function Keys Binds
                 if ev.key == pg.K_F1:
+                    self.helptext.text = "Help:F1,Inspector:F2,Editor:F3,Save/Load:F9/F10,Disable Mousepos/Camera:F11/F12"
                     self.menu.change_current_menu('help')
                 if ev.key == pg.K_F2:
+                    self.helptext.text = "Help:F1,Inspector:F2,Editor:F3,Save/Load:F9/F10,Disable Mousepos/Camera:F11/F12"
                     self.menu.change_current_menu("inspector")
                 if ev.key == pg.K_F3:
+                    self.helptext.text = "Help:F1,Inspector:F2,Editor:F3,Save/Load:F9/F10,Disable Mousepos/Camera:F11/F12"
                     self.menu.change_current_menu("editor")
                 if ev.key == pg.K_F9:
                     self.stagesystem.enemies = self.enemy_list
@@ -210,6 +233,7 @@ class EDITOR(AdvancedGameClass):
                 if ev.key == pg.K_F11:
                     self.disable_mouseposshow = not self.disable_mouseposshow
                 if ev.key == pg.K_F12:
+                    self.helptext.text = "Help:F1,Inspector:F2,Editor:F3,Save/Load:F9/F10,Disable Mousepos/Camera:F11/F12"
                     if self.camera_editor:
                         self.close_camera_editor()
                 
@@ -252,6 +276,8 @@ class EDITOR(AdvancedGameClass):
                     else:
                         if self.selected_behavior != 0:
                             self.selected_behavior -= 1
+                    if self.menu.menus['trigger_editor_menu'].selectable_elements[1].is_selected:
+                        self.dialoguenum -= 1
                 if ev.key == pg.K_RIGHT:
                     if self.menu.menus['enemy_editor'].selectable_elements[0].is_selected:
                         if self.selected_enemy < len(self.enemyregistry.rglist) - 1:
@@ -259,6 +285,8 @@ class EDITOR(AdvancedGameClass):
                     else:
                         if self.selected_behavior < len(self.behavioregistry.rglist) - 1:
                             self.selected_behavior += 1
+                    if self.menu.menus['trigger_editor_menu'].selectable_elements[1].is_selected:
+                        self.dialoguenum += 1
 
             if ev.type == pg.MOUSEBUTTONDOWN:
                 if ev.button == 3:
@@ -276,6 +304,7 @@ class EDITOR(AdvancedGameClass):
 
         self.menu.menus['enemy_editor'].elements[3].text_str = self.enemies[self.selected_enemy]
         self.menu.menus['enemy_editor'].elements[4].text_str = self.behaviors[self.selected_behavior]
+        self.menu.menus['trigger_editor_menu'].elements[4].text_str = f"{self.dialoguenum}"
 
         self.mousepos = list(pg.mouse.get_pos())
         self.mousepostext.pos = (self.mousepos[0] + 7, self.mousepos[1] + 7)
@@ -311,5 +340,8 @@ if __name__ == '__main__':
     if stg_path == '':
         editor = EDITOR()
     else:
-        editor = EDITOR(stg_path=f"{stg_path}")
+        if test_stg_file(stg_path) == True:
+            editor = EDITOR(stg_path=f"{stg_path}")
+        else:
+            editor = EDITOR(stg_path=f"{stg_path}")
     editor.run()
