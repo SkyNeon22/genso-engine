@@ -79,7 +79,7 @@ class Player:
         self.hitboxradius = 3
         self.grazeradius = 40
         self.hitbox = CircleCollider(self.hitboxradius, self.center)
-        self.graze_hitbox = CircleCollider(self.hitboxradius, self.center)
+        self.graze_hitbox = CircleCollider(self.grazeradius, self.center)
         self.iframes = 0
         self.ifmax = 200
     
@@ -312,3 +312,4 @@ class Player:
         self.hitbox.update(self.center)
         self.check_colliders()
         self.movement()
+
