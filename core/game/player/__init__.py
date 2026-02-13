@@ -1,1 +1,0 @@
-from core.game.player.character import *
