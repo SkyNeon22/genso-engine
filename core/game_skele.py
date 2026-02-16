@@ -22,13 +22,11 @@ import random
 
 class AdvancedGameClass:
     '''The skeleton of the game class\n
-        Note: this is a game object\n
+        Note: this is a "game" object\n
         and you need to supply this object to classes\n
-        like this: Sound(game=self(BasicGameClass), ...)'''
-    def __init__(self, window_caption="Genso Engine v0.1.1 Game (CHANGE ME)", win_size=RES):
-        # init pygame
+        like this: Sound(game=self(AdvancedGameClass), ...)'''
+    def __init__(self, window_caption="Genso Engine v0.1.2.1 Game (CHANGE ME)", win_size=RES):
         pg.init()
-        # The basic initialization of a pygame window
         self.window = pg.display.set_mode((RES), pg.OPENGL | pygame.DOUBLEBUF | pg.SRCALPHA | pg.BLEND_ADD)
         self.WIN_SIZE = win_size
         self.screen = pg.surface.Surface((RES), pg.SRCALPHA, depth=32)
@@ -54,15 +52,9 @@ class AdvancedGameClass:
         self.difficulties = ("Easy","Normal","Hard","Lunatic","Extra")     
         self.diff = self.difficulties[2]
         self.selected_button = 0
-        # rank (unused)
-        self.min_rank = 5 # unused
-        self.rank = 5 # unused
-        self.max_rank = 34 # unused
 
         # Shottype selection
         self.Character = None
-        # unused (damn I should delete some of unused stuff sometime)
-        self.active_spell = None
 
         # no more exploding menus (menu flag)
         self.in_menu = False
@@ -90,31 +82,34 @@ class AdvancedGameClass:
         # 2d pygame surface to 3d object&texture
         self.pentabuff = self.ctx.buffer(data=array.array('f', [
             # pos (x, y, z), uv coords (x, y)
-            -1.0, 1.0, 0.0,   0.0, 0.0, 1.0,   #topleft
-            1.0, 1.0, 0.0,   1.0, 0.0, 1.0,    #topright
-            -1.0, -1.0, 0.0,   0.0, 1.0, 1.0,  #botleft
-            1.0, -1.0, 0.0,   1.0, 1.0, 1.0,   #botright
+            -1.0, 1.0, 0.0,   0.0, 0.0, 1.0,
+            1.0, 1.0, 0.0,   1.0, 0.0, 1.0,
+            -1.0, -1.0, 0.0,   0.0, 1.0, 1.0,
+            1.0, -1.0, 0.0,   1.0, 1.0, 1.0,
         ]))
 
         self.renderobject = self.ctx.vertex_array(self.program.programs["2dsurf"], [(self.pentabuff, '3f 3f', 'vert', 'texcoord')])
 
-        # some more game system init
-        self.musicvolume = 0.20 # set between 0 and 1 
-        self.soundvolume = 0.20 # set between 0 and 1 
+        self.musicvolume = 0.20
+        self.soundvolume = 0.20
+
         self.stage = "1.stg"
         self.current_song = None
+
         self.stagesystem = StageSystem(game=self, mapfile=self.stage)
-        self.projregistry = PROJECTILE_REGISTRY(self) # a projectile registry  
+        self.projregistry = PROJECTILE_REGISTRY(self) 
         self.soundregistry = SOUND_REGISTRY(self)
         self.musicregistry = MUSIC_REGISTRY(self)
         self.menu = MenuSystem(self)
         self.dialogsys = DialogueSystem(self)
-        # init game
+
+
+    def set_caption(caption: str = "Genso Engine v0.1.2.1 Game (CHANGE ME)"):
+        pg.display.set_caption(caption)
 
     def get_time(self):
-        # deltatime
         self.time = pg.time.get_ticks() * 0.001
-    # the 2d surface to texture function
+
     def surt_to_tex(self, surf):
         tex = self.ctx.texture(surf.get_size(), 4, dtype="f1")
         tex.filter = (mgl.NEAREST, mgl.NEAREST)
@@ -123,14 +118,13 @@ class AdvancedGameClass:
         tex.write(b.tobytes())
         return tex
     
-    # garbage collection and exiting
     def exit(self):
         self.program.destroy()
         self.renderobject.release()
         self.scene_manager.clean_up()
         pg.quit()
         sys.exit()
-    #-------menu stuff------
+
     def reload(self):
         self.camera.position = glm.vec3(0, 3, 0)
         self.camera.pitch = 0
@@ -192,7 +186,7 @@ class AdvancedGameClass:
                         if enemy.kill:
                             self.bossfight = False
                             self.enemy_list.remove(enemy)
-            except:
+            except IndexError:
                 for enemy in self.enemy_list:
                     if enemy.is_boss == True:
                         self.bossfight = True
