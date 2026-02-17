@@ -25,7 +25,7 @@ class CircleCollider:
             return False
 
     def collidecircle(self, circle):
-        if dist(self.position, circle.position) <= self.radius + circle.radius - 1:
+        if dist(self.position, circle.position) < (self.radius + circle.radius) - 1:
             return True
         else:
             return False

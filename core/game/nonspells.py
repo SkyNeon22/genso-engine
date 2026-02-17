@@ -19,9 +19,15 @@ class Nonspell:
         self.cooldown = 0
         self.difficulty = difficulty
         self.inflictor = inflictor
-
+    
+    def shoot(self, name="ball_white", pos=(0, 0), angle=0, speed=10):
+        self.game.projregistry.shoot(name, pos, angle, speed)
+    
+    def shoottest(self, name="ball_white", pos=(0, 0), angle=0, speed=[10, 10]):
+        self.game.projregistry.shoottest(name, pos, angle, speed)
+        
     def do(self):
-        self.game.projregistry.shoot("ball_red", self.inflictor.hitbox.position, get_angle(self.game.player.hitbox.position ,self.inflictor.hitbox.position), 3)
+        pass
 
     def update(self):
         if not self.active:

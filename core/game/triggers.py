@@ -2,31 +2,29 @@ import pygame as pg
 import glm
 import math
 
-
 class Trigger:
     default_values = {
         'startframetime': 0, 'endframetime': 10}
+
     def __init__(self, **kwargs):
         self.startframetime = 0
         self.endframetime = 0
         self.type = "base"
         for key, value in kwargs.items():
             setattr(self, key, value) 
+    
     def todict(self):
         return {"startframetime": self.startframetime,
                 "endframetime": self.endframetime
         }
+
     @classmethod
     def fromdict(cls, asset):
         return cls(startframetime=asset['startframetime'], endframetime=asset['endframetime'])
+
     def update(self): ...
+
     def reserved(self): ...
-
-
-
-
-
-
 
 class DialogueActivate(Trigger):
     def __init__(self, game, dialoguenum=0, **kwargs):
@@ -35,27 +33,56 @@ class DialogueActivate(Trigger):
         self.dialoguenum = dialoguenum
         self.armed = True
         self.type = "dialogueactivate"
+    
     def todict(self):
         return {"startframetime": self.startframetime,
                 "endframetime": self.endframetime,
                 "type": self.type,
                 "dialoguenum": self.dialoguenum,
-        }
+                }
+
     @classmethod
     def fromdict(cls, asset, game):
         return cls(game, startframetime=asset['startframetime'], endframetime=asset['endframetime'], dialoguenum=asset["dialoguenum"])
+    
     def update(self):
         if self.game.frametime >= self.startframetime and self.armed:
             self.game.dialogsys.active = True
             self.game.dialogsys.active_collection = self.dialoguenum
             self.armed = False
 
+class MoveCameraByAxis(Trigger):
+    '''Values:
+        startframetime: int
+        endframetime: int
+        axis: str (x, y or z)
+        destinatedpos: int (position on the axis)
+        
+        Errors:
+            Valuerror: if axis != 'x' or 'y' or 'z', also if startframe time > endframetime
+        '''
+    default_values = {
+        'startframetime': 0, 'endframetime': 10, 'axis': 'x', 'destinatedpos': 0
+    }
+    def __init__(self, camera, **kwargs):
+        self.axis = 'x'
+        self.destinatedpos = 0
+        super().__init__(**kwargs)
+        self.type = "movecamerabyaxis"
+        self.camera = camera
+        self.activetime = self.endframetime - self.startframetime
+        try:
+            self.dist = self.destinatedpos - getattr(self.camera, 'position').__getattribute__(self.axis)
+        except:
+            self.dist = self.destinatedpos
+        self.speed = self.dist / self.activetime
 
-
-
-
-
-
+    def update(self):
+        if self.camera.app.frametime >= self.startframetime and self.camera.app.frametime <= self.endframetime:
+            self.camera.position += self.speed
+            if self.camera.app.frametime == self.endframetime:
+                self.camera.position = self.destinatedpos
+    
 class MoveCameraToDestPos(Trigger):
     '''Values:
         startframetime: int
@@ -110,11 +137,6 @@ class MoveCameraToDestPos(Trigger):
             self.camera.position += self.speed
             if self.camera.app.frametime == self.endframetime:
                 self.camera.position = self.destinatedpos
-    
-
-
-
-
 
     
 class RotateCamera(Trigger):
@@ -173,4 +195,3 @@ class RotateCamera(Trigger):
             if self.camera.app.frametime == self.endframetime:
                 self.camera.yaw == self.yaw
                 self.camera.pitch == self.pitch
-

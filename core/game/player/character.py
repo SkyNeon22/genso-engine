@@ -5,7 +5,7 @@ from core.game.colliders import CircleCollider
 
 
 class Player:
-    def __init__(self, game, pos=(194, 300), start_power=0.0):
+    def __init__(self, game, pos=(194, 300), start_power=0):
         self.game = game
         self.unfocus_speed = 0.73
         self.focus_speed = 0.4
@@ -39,12 +39,8 @@ class Player:
         self.shooting = False
         self.legacy_shots = False
 
-        if self.legacy_shots:
-            self.power = 0
-            self.max_power = 128
-        else:
-            self.power = start_power
-            self.max_power = 4.0
+        self.power = start_power
+        self.max_power = 128
 
         self.item_slow_rate = 0.11
 
@@ -79,46 +75,29 @@ class Player:
         self.hitboxradius = 3
         self.grazeradius = 40
         self.hitbox = CircleCollider(self.hitboxradius, self.center)
-        self.graze_hitbox = CircleCollider(self.hitboxradius, self.center)
+        self.graze_hitbox = CircleCollider(self.grazeradius, self.center)
         self.iframes = 0
         self.ifmax = 200
-        self.angle_x = 0
-        self.angle_y = 0
     
     def bomb(self):
         self.bombs -= 1
         self.iframes = 180 
         self.game.player_proj.append(Bomb(self.game, (self.hitbox.x - self.hitbox.x / 2, self.hitbox.y)))
     
-    def calculate_dir(self):
-        self.dx, self.dy = sin(self.angle_x) * self.speed, sin(self.angle_y) * self.speed
-    
-    def move_x(self):
-        self.calculate_dir()
-        self.pos[0] += self.dx
-
-    def move_y(self):
-        self.calculate_dir()
-        self.pos[1] += self.dy
-    
     def movement(self):
         keys = pg.key.get_pressed()
         if self.deathbombc <= -1:
             if keys[pg.K_UP] and self.pos[1] >= -10:
-                    self.angle_y = -90
-                    self.move_y()
+                    self.pos[1] -= self.speed
                     self.animstate = "I"
             if keys[pg.K_DOWN] and self.pos[1] <= 416:
-                    self.angle_y = 90
-                    self.move_y()
+                    self.pos[1] += self.speed
                     self.animstate = "I"
             if keys[pg.K_LEFT] and self.pos[0] >= -10:
-                    self.angle_x = -90
-                    self.move_x()
+                    self.pos[0] -= self.speed
                     self.animstate = "L"
             if keys[pg.K_RIGHT] and self.pos[0] <= 358:
-                    self.angle_x = 90
-                    self.move_x()
+                    self.pos[0] += self.speed
                     self.animstate = "R"
             if keys[pg.K_LSHIFT] or keys[pg.K_RSHIFT]:
                 self.focus = True
@@ -205,15 +184,23 @@ class Player:
         #pg.draw.rect(self.game.fight_area, (25, 25, 100), self.graze_hitbox)
         #pg.draw.rect(self.game.fight_area, (255, 255, 255), self.hitbox)
         #self.game.fight_area.blit(self.hitbox_img, (self.hitbox.x, self.hitbox.y))
-        if self.focus == True:
-            self.game.fight_area.blit(self.graze_hitbox_img, (self.pos[0] - 16, self.pos[1] - 10))
+        # if self.focus == True:
+        #     self.game.fight_area.blit(self.graze_hitbox_img, (self.pos[0] - 16, self.pos[1] - 10))
             #self.game.fight_area.blit(self.hitbox_img, (self.hitbox.x, self.hitbox.y))
         self.game.fight_area.blit(pg.transform.scale(self.img, self.size), self.pos)
+        if self.focus:
+            pg.draw.circle(self.game.fight_area, (0, 0, 0), self.center, 4)
+            pg.draw.circle(self.game.fight_area, (255, 255, 255), self.center, 3)
 
     def if_hit(self):
-        self.lives -= 1
-        if self.power >= 0.50:
-            self.power -= 0.50
+        if self.lives > 0:
+            self.lives -= 1
+        else:
+            self.game.to_menu()
+        if self.power >= 16:
+            self.power -= 16
+        else:
+            self.po = 0
         self.bombs = 3
         self.pos = list(self.start_pos)
         self.game.proj_list = []
@@ -250,6 +237,8 @@ class Player:
                 if pickup.type == "pwr":
                     if self.power < self.max_power:
                         self.power += pickup.power
+                    else:
+                        self.power = self.max_power
                     self.game.score += pickup.points
                     pickup.kill = True
                 if pickup.type == "col":
@@ -265,6 +254,7 @@ class Player:
                         self.lives += 1
                         self.life_pieces = 0
                         self.game.soundregistry.get("extend").play()
+                        self.game.soundregistry.get("extend").reload()
                     else:
                         self.life_pieces += 1
                     pickup.kill = True
@@ -274,8 +264,11 @@ class Player:
                     pickup.kill = True
         for bul in self.game.proj_list:
             if bul.team == "en":
-                if self.graze_hitbox.collidecircle(bul.hitbox):
+                if self.graze_hitbox.collidecircle(bul.hitbox) and not bul.grazed:
+                    self.game.soundregistry.get("graze").play(self.game.soundvolume)
                     self.grazes += 1
+                    bul.grazed = True
+                self.game.soundregistry.get("graze").reload()
 
     def update(self):
         #self.graze_angle += 1
@@ -289,30 +282,31 @@ class Player:
             self.bomb_used = False
         self.deathbombc -= 1
         self.iframes -= 1
-        if self.power <= 0.99:
-            self.yinyangs = []
-        if self.focus == True:
-            self.speed = self.focus_speed
-            if self.power >= 1.0 and self.power <= 1.99:
-                self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_1[0], self.hitbox.y + self.focus_yin_offset_p_1[1]))]
-            if self.power >= 2.0 and self.power <= 2.99:
-                self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_2[0], self.hitbox.y + self.focus_yin_offset_p_2[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_2[2], self.hitbox.y + self.focus_yin_offset_p_2[3]))]
-            if self.power >= 3.0 and self.power <= 3.99:
-                self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_3[0], self.hitbox.y + self.focus_yin_offset_p_3[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_3[2], self.hitbox.y + self.focus_yin_offset_p_3[3])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_3[4], self.hitbox.y + self.focus_yin_offset_p_3[5]))]
-            if self.power >= 4.0:
-                self.power = 4.0
-                self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[0], self.hitbox.y + self.focus_yin_offset_p_4[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[2], self.hitbox.y + self.focus_yin_offset_p_4[3])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[4], self.hitbox.y + self.focus_yin_offset_p_4[5])),self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[6], self.hitbox.y + self.focus_yin_offset_p_4[7]))]
-        else:
-            self.speed = self.unfocus_speed
-            if self.power >= 1.0 and self.power <= 1.99:
-                self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_1[0], self.hitbox.y + self.yin_offset_p_1[1]))]
-            if self.power >= 2.0 and self.power <= 2.99:
-                self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_2[0], self.hitbox.y + self.yin_offset_p_2[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_2[2], self.hitbox.y + self.yin_offset_p_2[3]))]
-            if self.power >= 3.0 and self.power <= 3.99:
-                self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_3[0], self.hitbox.y + self.yin_offset_p_3[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_3[2], self.hitbox.y + self.yin_offset_p_3[3])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_3[4], self.hitbox.y + self.yin_offset_p_3[5]))]
-            if self.power >= 4.0:
-                self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_4[0], self.hitbox.y + self.yin_offset_p_4[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_4[2], self.hitbox.y + self.yin_offset_p_4[3])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_4[4], self.hitbox.y + self.yin_offset_p_4[5])),self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_4[6], self.hitbox.y + self.yin_offset_p_4[7]))]
-
+        if not self.legacy_shots:
+            if self.power <= 0.99:
+                self.yinyangs = []
+            if self.focus == True:
+                self.speed = self.focus_speed
+                if self.power >= 1.0 and self.power <= 1.99:
+                    self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_1[0], self.hitbox.y + self.focus_yin_offset_p_1[1]))]
+                if self.power >= 2.0 and self.power <= 2.99:
+                    self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_2[0], self.hitbox.y + self.focus_yin_offset_p_2[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_2[2], self.hitbox.y + self.focus_yin_offset_p_2[3]))]
+                if self.power >= 3.0 and self.power <= 3.99:
+                    self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_3[0], self.hitbox.y + self.focus_yin_offset_p_3[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_3[2], self.hitbox.y + self.focus_yin_offset_p_3[3])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_3[4], self.hitbox.y + self.focus_yin_offset_p_3[5]))]
+                if self.power >= 4.0:
+                    self.power = 4.0
+                    self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[0], self.hitbox.y + self.focus_yin_offset_p_4[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[2], self.hitbox.y + self.focus_yin_offset_p_4[3])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[4], self.hitbox.y + self.focus_yin_offset_p_4[5])),self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[6], self.hitbox.y + self.focus_yin_offset_p_4[7]))]
+            else:
+                self.speed = self.unfocus_speed
+                if self.power >= 1.0 and self.power <= 1.99:
+                    self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_1[0], self.hitbox.y + self.yin_offset_p_1[1]))]
+                if self.power >= 2.0 and self.power <= 2.99:
+                    self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_2[0], self.hitbox.y + self.yin_offset_p_2[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_2[2], self.hitbox.y + self.yin_offset_p_2[3]))]
+                if self.power >= 3.0 and self.power <= 3.99:
+                    self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_3[0], self.hitbox.y + self.yin_offset_p_3[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_3[2], self.hitbox.y + self.yin_offset_p_3[3])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_3[4], self.hitbox.y + self.yin_offset_p_3[5]))]
+                if self.power >= 4.0:
+                    self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_4[0], self.hitbox.y + self.yin_offset_p_4[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_4[2], self.hitbox.y + self.yin_offset_p_4[3])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_4[4], self.hitbox.y + self.yin_offset_p_4[5])),self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_4[6], self.hitbox.y + self.yin_offset_p_4[7]))]
+    
         if self.animstate == "I":
             self.img = self.other
         elif self.animstate == "R":

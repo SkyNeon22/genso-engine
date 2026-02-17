@@ -13,9 +13,7 @@ def is_negative(num: int):
     return True if num % -1 else False
 
 def get_angle(target_pos, object_pos):
-    pos1 = pg.math.Vector2(target_pos)
-    pos2 = pg.math.Vector2(object_pos)
-    return math.degrees(math.atan2(target_pos.y - object_pos.y, target_pos.x - object_pos.x))
+    return math.degrees(math.atan2(target_pos[1] - object_pos[1], target_pos[0] - object_pos[0]))
 
 # don't even try to understand this func (it's useless)
 def speed_compensation(direction: list, speed: float): 

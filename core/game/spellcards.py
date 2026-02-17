@@ -5,57 +5,46 @@ from core.additions import get_angle
 import random
 import math
 
-
 # 60 ticks = 1 second
 class Spellcard:
-    def __init__(self, game, inflictor=None):
+    def __init__(self, game, rank, difficulty=None, inflictor=None):
         self.game = game
-
         self.start_hp = int(inflictor.hp)
+        self.shoot_time = 40
+        self.active = False
         self.alloc_hp = 1000
-
-        self.start_pos = [(self.game.fight_area.get_width() / 2) - (self.inflictor.center[0] / 2), self.game.fight_area.get_height() / 4]
-
-        self.time = 0
         self.timeout = 1980
         self.old_time = self.timeout
-        self.do_start = False
-        
+        self.cooldown = 0
+        self.rank = rank
         self.in_game_display_name = """Test: "?" """
-        self.bg = pg.image.load("")
-        self.blit_portrait = pg.image.load("")
+        self.difficulty = difficulty
         self.inflictor = inflictor
-        self.dmg_res = 0.3
+        self.done = False
 
-        self.font = pg.font.SysFont('notosansjp', 14)
+    def shoot(self, name="ball_white", pos=(0, 0), angle=0, speed=10):
+        self.game.projregistry.shoot(name, pos, angle, speed)
     
-    def draw_name(self):
-        text_surface = self.font.render(self.in_game_display_name, True, (255, 255, 255))
-        self.game.screen.blit(text_surface, [60, 0])
-        timeout_surface = self.font.render(str((self.timeout // 60)), True, (255, 255, 255))
-        self.game.screen.blit(timeout_surface, [30, 0])
+    def shoottest(self, name="ball_white", pos=(0, 0), angle=0, speed=[10, 10]):
+        self.game.projregistry.shoottest(name, pos, angle, speed)
 
     def do(self):
         pass
 
     def update(self):
-        self.game.fight_area.blit(self.bg, (0, 0))
-        self.draw_name()
-        if self.do_start:
+        if not self.active:
+            self.start_hp = int(self.inflictor.hp)
+            self.active = True
+            self.timeout = self.old_time
+        elif self.active:
             self.timeout -= 1
-            self.time += 1
-            self.inflictor.dmg_resist = self.dmg_res
-            self.do()
+            self.cooldown -= 1
+            if self.cooldown <= 0:
+                self.do()
+                self.cooldown = self.shoot_time
             if self.timeout <= 0 or self.inflictor.hp < self.start_hp - self.alloc_hp:
+                self.game.score += 100000 + (self.timeout * 100)
                 self.inflictor.hp = self.start_hp - self.alloc_hp
                 self.inflictor.active_attack += 1
                 self.game.proj_list.clear()
-        else:
-            self.start_hp = int(self.inflictor.hp)
-            self.timeout = self.old_time
-            self.inflictor.dmg_resist = 0
-            self.inflictor.pos = self.set_pos
-            self.game.fight_area.blit(self.blit_portrait, (self.pos_x, 60))
-            self.pos_x += 5
-            if self.pos_x >= 700:
-                self.do_start = True
+                self.active = False

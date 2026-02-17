@@ -1,5 +1,6 @@
 import pygame as pg
 import numpy as np
+from math import radians
 import sys
 from core.visuals.ui import *
 
@@ -22,12 +23,14 @@ class MenuSystem:
         if len(self.menus[self.current_menu_item].selectable_elements) != 0:
             if self.menu_ui_selected != len(self.menus[self.current_menu_item].selectable_elements):
                 self.previous_menu_ui_select = self.menu_ui_selected
+                self.menus[self.current_menu_item].selectable_elements[self.previous_menu_ui_select].is_selected = False
                 self.menu_ui_selected += 1
     
     def change_menu_ui_selected_up(self):
         if len(self.menus[self.current_menu_item].selectable_elements) != 0:
             if self.menu_ui_selected != 0:
                 self.previous_menu_ui_select = self.menu_ui_selected
+                self.menus[self.current_menu_item].selectable_elements[self.previous_menu_ui_select].is_selected = False
                 self.menu_ui_selected -= 1
 
 
@@ -66,11 +69,71 @@ class Menu:
         for elem in self.elements:
             elem.update()
 
-        if len(self.selectable_elements) != 0:
-            for elem in self.selectable_elements:
-                elem.update()
-                self.selectable_elements[self.menumanager.previous_menu_ui_select].is_selected = False
-                self.selectable_elements[self.menumanager.menu_ui_selected].is_selected = True
+        for elem in self.selectable_elements:
+            elem.update()
+            #self.selectable_elements[self.menumanager.previous_menu_ui_select].is_selected = False
+            self.selectable_elements[self.menumanager.menu_ui_selected].is_selected = True
+
+class ShotTypeSelectMenu(Menu):
+    def __init__(self, game, menumanager):
+        super().__init__(game, menumanager)
+        self.ssc_angle = 0
+        self.selected_shottype_circle = MenuLabel(self.game, (480, 320), "assets\\img\\sprites\\ui\\test.png", sprite_size=[300, 300])
+        self.elements = [MenuText(self.game, [50, 50], size=40), MenuText(self.game, [50, 90], size=25), MenuText(self.game, [50, 120], size=25)]
+        self.elements[0].text = JapaneseFontText(self.game, self.elements[0].pos, self.elements[0].size, text="博麗　霊夢")
+        self.elements[1].text = JapaneseFontText(self.game, self.elements[1].pos, self.elements[1].size, text="広範囲をカバーショットタイプ")
+        self.elements[2].text = JapaneseFontText(self.game, self.elements[2].pos, self.elements[2].size, text="速度: 中")
+        self.selectable_elements = [
+            MenuSelectableText(self.game, execute=self.game.new_game_reimu),            
+            MenuSelectableText(self.game, execute=self.game.new_game_marisa),            
+            MenuSelectableText(self.game, execute=self.game.new_game_alice),            
+            MenuSelectableText(self.game, execute=self.menumanager.change_current_menu, args=["mainmenu"]),
+        ]
+    
+    def rotate_clockwise(self):
+        self.ssc_angle -= 3
+    def rotate_counterclockwise(self):
+        self.ssc_angle += 3
+    
+    def _update(self):
+        self.selected_shottype_circle.draw_with_rot(self.ssc_angle)
+        if self.menumanager.menu_ui_selected == 0 and self.ssc_angle != 0:
+            self.elements[0].text_str = "博麗　霊夢"
+            self.elements[1].text_str = "広範囲をカバーショットタイプ"
+            self.elements[2].text_str = "速度: 中"
+            if self.ssc_angle >= 0:
+                self.rotate_clockwise()
+            else:
+                self.rotate_counterclockwise()
+        if self.menumanager.menu_ui_selected == 1 and self.ssc_angle != 90:
+            self.elements[0].text_str = "霧雨　魔理沙"
+            self.elements[1].text_str = "前方中心のショットタイプ"
+            self.elements[2].text_str = "速度: 速い"
+            if self.ssc_angle >= 90:
+                self.rotate_clockwise()
+            else:
+                self.rotate_counterclockwise()
+        if self.menumanager.menu_ui_selected == 2 and self.ssc_angle != 180:
+            self.elements[0].text_str = "上海アリス幻樂団"
+            self.elements[1].text_str = "ハイブリッドショットタイプ"
+            self.elements[2].text_str = "速度: 中"
+            if self.ssc_angle >= 180:
+                self.rotate_clockwise()
+            else:
+                self.rotate_counterclockwise()
+        if self.menumanager.menu_ui_selected == 3 and self.ssc_angle != 270:
+            self.elements[0].text_str = "ＥＸＩＴ"
+            self.elements[1].text_str = ""
+            self.elements[2].text_str = ""
+            if self.ssc_angle >= 270:
+                self.rotate_clockwise()
+            else:
+                self.rotate_counterclockwise()
+            
+    
+    def update(self):
+        self._update()
+        return super().update()
 
 class MenuBar:
     def __init__(self, game, pos:list = [0, 0], text = None, textcolor = None, barcolor = None, textsize = None, size = None):
@@ -164,7 +227,7 @@ class MenuSelectableText:
             else:
                 self.text.on_use(*self.args)
         except Exception:
-            self.game.soundregistry.rglist["cancel"].play()
+            self.game.soundregistry.rglist["cancel"].play(self.game.soundvolume)
         self.game.soundregistry.rglist["cancel"].reload()
 
     def update_status(self):
@@ -184,16 +247,20 @@ class MenuSelectableText:
     
 
 class MenuLabel: 
-    def __init__(self, game, pos: list = [0, 0], img_path: pg.Surface = None):
+    def __init__(self, game, pos: list = [0, 0], img_path: str = "", sprite_size=[]):
         self.game = game
         self.pos = pos
         try:
-            if img_path is not str or img_path is not None:
-                self.img = pg.image.load(img_path).convert_alpha()
+            if img_path:
+                self.img = pg.image.load(img_path)#.convert_alpha()
             else:
                 self.img = pg.image.load("assets/img/guesswhatismissing.png")
         except FileNotFoundError:
             self.img = pg.image.load("assets/img/guesswhatismissing.png")
+        if sprite_size == []:
+            self.sprite_size = list(self.img.get_size())
+        else:
+            self.sprite_size = sprite_size
             
     def no(self): ... # reserved
     def no(self): ... # reserved
@@ -204,8 +271,6 @@ class MenuLabel:
     def no(self): ... # reserved
     def no(self): ... # reserved
     def no(self): ... # reserved
-    def update(self):
-        self.game.screen.blit(self.img, self.pos)
     def change_img(self, img_path):
         try:
             if img_path is not str or img_path is not None:
@@ -220,7 +285,10 @@ class MenuLabel:
         self.draw()
     
     def draw(self):
-        self.game.screen.blit(self.img, self.pos)
+        self.game.screen.blit(pg.transform.scale(self.img, self.sprite_size), self.pos)
+    
+    def draw_with_rot(self, angle):
+       self.game.screen.blit(pg.transform.rotate(pg.transform.scale(self.img, self.sprite_size), angle), self.pos)
 
 class MenuRect:
     '''optional args: \n
