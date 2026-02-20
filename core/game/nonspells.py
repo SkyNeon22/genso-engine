@@ -19,15 +19,23 @@ class Nonspell:
         self.cooldown = 0
         self.difficulty = difficulty
         self.inflictor = inflictor
-    
-    def shoot(self, name="ball_white", pos=(0, 0), angle=0, speed=10):
-        self.game.projregistry.shoot(name, pos, angle, speed)
-    
-    def shoottest(self, name="ball_white", pos=(0, 0), angle=0, speed=[10, 10]):
-        self.game.projregistry.shoottest(name, pos, angle, speed)
         
+        self.font = pg.font.SysFont('notosansjp', 14)
+    
+    def draw_name(self):
+        timeout_surface = self.font.render(str((self.timeout // 60)), True, (255, 255, 255))
+        self.game.screen.blit(timeout_surface, [30, 0])
+    
+    def shoot(self, proj_id: str= "ball_white", position: list= (0, 0), angle: float=0, speed: float=1):
+        '''Shoots a projectile from the game's projectile registry,
+           proj_id: internal registry id,
+           position: position,
+           angle: an angle, at what the projectile would go (in degrees),
+           speed: projectile speed'''
+        self.game.projregistry.shoot(proj_id, position, angle, speed)
+
     def do(self):
-        pass
+        self.game.projregistry.shoot("ball_red", self.inflictor.hitbox.position, get_angle(self.game.player.hitbox.position ,self.inflictor.hitbox.position), 3)
 
     def update(self):
         if not self.active:
@@ -35,6 +43,7 @@ class Nonspell:
             self.active = True
             self.timeout = self.old_time
         elif self.active:
+            self.draw_name()
             self.timeout -= 1
             self.cooldown -= 1
             self.inflictor.dmg_resist = 1.0

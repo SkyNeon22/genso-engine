@@ -13,6 +13,8 @@ class StageSystem:
         self.mapfile = mapfile
         self.stgdir = stagedirectory
         self.map = self.load(self.mapfile)
+        self.enemies = self.init_enemies(self.mapfile)
+        self.triggers = self.init_triggers(self.mapfile)
         self.map_dict = {}
         logging.info("initialized a stage system")
     
@@ -51,15 +53,6 @@ class StageSystem:
             for rc in self.map.get('enemies'):
                 if rc.get("type") == "enemy":
                     temp2 = enemy.Enemy.fromdict(asset=rc)
-                    temp2.game = self.game
-                    temp.append(temp2)
-                elif rc.get("type") == "fairy1":
-                    print(self.game.enemyregistry["fairy1"].fromdict(asset=rc))
-                    temp2 = self.game.enemyregistry["fairy1"].fromdict(asset=rc)
-                    temp2.game = self.game
-                    temp.append(temp2)
-                elif rc.get("type") == "fairy2":
-                    temp2 = self.game.enemyregistry["fairy2"].fromdict(asset=rc)
                     temp2.game = self.game
                     temp.append(temp2)
                 elif rc.get("type") == "testboss":

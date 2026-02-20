@@ -65,7 +65,7 @@ class Enemy:
         return cls(asset["game"] or game,asset["pos"], asset["time"], behavioregistry.rglist.get(asset["behavior"]), asset["behavior_args"])
 
     def check_despawn(self): # despawn when outside of the fight area (you can change the values for more outside room of despawn)
-        if self.pos[0] < -80 or self.pos[0] > 400 or self.pos[1] < -80 or self.pos[1] > 498:
+        if self.pos[0] < -20 or self.pos[0] > 400 or self.pos[1] < -20 or self.pos[1] > 498:
             self.kill = True
 
     def check_bullet(self): # check for player projectiles
@@ -75,13 +75,10 @@ class Enemy:
                     self.hp -= bul.damage * self.dmg_resist
                     self.game.score += 10
                     bul.kill = True 
-    
+
     def shoot(self):
-        self.game.proj_list.append(Projectile(self.game, (self.pos[0], self.pos[1] + 25), team="en", direction=(0, 1), speed=0.4))
-
-    def draw(self): # draw function
-        pg.draw.rect(self.game.fight_area, (200, 0, 0), pg.Rect(self.pos, self.size))
-
+        self.game.proj_list.append(Projectile(self.game, (self.pos[0], self.pos[1] + 25), team="en", angle=90, speed=0.4))
+    
     def drop(self):
         drop = random.randint(1, 100)
         if drop >= 60 and drop <= 84:
@@ -90,6 +87,9 @@ class Enemy:
             self.game.pickup_list.append(Power_pickup(self.game, pos=self.pos))
         elif drop >= 100:
             self.game.pickup_list.append(Big_Power_pickup(self.game, pos=self.pos))
+
+    def draw(self): # draw function
+        pg.draw.rect(self.game.fight_area, (200, 0, 0), pg.Rect(self.pos, self.size))
 
     def update(self): # update the enemy
         if self.game.frametime >= self.time:
@@ -108,12 +108,12 @@ class Enemy:
             self.check_despawn()
             self.draw()
 
-class Testboss(Enemy): # fork of the enemy class to make a boss (if you want to make a boss fork this class)
+class Boss(Enemy): # fork of the enemy class to make a boss (if you want to make a boss fork this class)
     # commenting this shit another time
     def __init__(self, game, pos=(190, 400), time=0, behavior=None, behavior_args=[]):
         super().__init__(game, pos, time, behavior, behavior_args)
         self.game = game 
-        self.type = "testboss"
+        self.type = "Boss"
         self.col_dmg = False
         self.dmg_resist = 1
         self.behavior = behavior
@@ -169,11 +169,11 @@ class Testboss(Enemy): # fork of the enemy class to make a boss (if you want to 
                 self.game.musicregistry.rglist[self.theme_id].play(self.game.musicvolume)
                 self.music_done = True
             self.game.soundregistry.rglist["damage00"].reload()
-            if self.attorder[self.active_attack] !=  None:
-                self.game.active_spell = self.attorder[self.active_attack].in_game_display_name
-            else:
-                self.game.active_spell = None
             try:
+                if self.attorder[self.active_attack] != None:
+                    self.game.active_spell = self.attorder[self.active_attack].in_game_display_name
+                else:
+                    self.game.active_spell = None
                 if self.active_attack <= len(self.attorder):
                     self.attorder[self.active_attack].update()
                 else:
@@ -191,7 +191,13 @@ class Testboss(Enemy): # fork of the enemy class to make a boss (if you want to 
                     proj.destroy()
                 self.kill = True
                 self.game.active_spell = None
-                self.drop()
+                drop = random.randint(1, 100)
+                if drop >= 60 and drop <= 84:
+                    self.game.pickup_list.append(Point_pickup(self.game, pos=self.pos))
+                if drop >= 85 and drop <= 99:
+                    self.game.pickup_list.append(Power_pickup(self.game, pos=self.pos))
+                elif drop >= 100:
+                    self.game.pickup_list.append(Big_Power_pickup(self.game, pos=self.pos))
             self.center = (self.pos[0] + (self.size[0] // 2), self.pos[1] + (self.size[1] // 2))
             self.hitbox.update(self.center)
             self.check_bullet()
