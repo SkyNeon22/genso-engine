@@ -55,12 +55,6 @@ class AdvancedGameClass:
 
 
 
-        self.left_fight_area_border = 0
-        self.right_fight_area_border = self.fight_area.get_width()
-        self.top_fight_area_border = 0
-        self.bottom_fight_area_border = self.fight_area.get_height()
-
-
 
 
         # Shottype selection
@@ -76,6 +70,11 @@ class AdvancedGameClass:
         self.score = 0
         # Touhou STG without a game area is not Touhou STG
         self.fight_area = pg.Surface((384, 448),pg.SRCALPHA)
+        # small fixes
+        self.left_fight_area_border = 0
+        self.right_fight_area_border = self.fight_area.get_width()
+        self.top_fight_area_border = 0
+        self.bottom_fight_area_border = self.fight_area.get_height()
         # sum lists
         self.proj_list = []
         self.player_proj = []
@@ -244,4 +243,5 @@ class AdvancedGameClass:
 
 if __name__ == "__main__":
     game = AdvancedGameClass()
+
     game.run()
