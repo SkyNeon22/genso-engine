@@ -74,6 +74,7 @@ class Projectile:
     
     def update(self): 
         self.draw()
+        self.logic()
         if self.pos[1] <= -50 or self.pos[1] >= 600:
             self.destroy()
         if self.pos[0] <= -50 or self.pos[0] >= 600:
@@ -139,4 +140,5 @@ class ReflectingProjectile(Projectile):
             self.change_angle(-degrees(self.angle))
             self.reflect_count -= 1
         self.pos[0] += self.dx
+
         self.pos[1] += self.dy
