@@ -12,9 +12,9 @@ class StageSystem:
         self.game = game
         self.mapfile = mapfile
         self.stgdir = stagedirectory
-        self.map = self.load(self.mapfile)
-        self.enemies = self.init_enemies(self.mapfile)
-        self.triggers = self.init_triggers(self.mapfile)
+        # self.map = self.load(self.mapfile)
+        # self.enemies = self.init_enemies(self.mapfile)
+        # self.triggers = self.init_triggers(self.mapfile)
         self.map_dict = {}
         logging.info("initialized a stage system")
     

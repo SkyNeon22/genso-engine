@@ -79,7 +79,7 @@ class Player:
         self.hitboxradius = 3
         self.grazeradius = 40
         self.hitbox = CircleCollider(self.hitboxradius, self.center)
-        self.graze_hitbox = CircleCollider(self.hitboxradius, self.center)
+        self.graze_hitbox = CircleCollider(self.grazeradius, self.center)
         self.iframes = 0
         self.ifmax = 200
         self.angle_x = 0
@@ -88,7 +88,6 @@ class Player:
     def bomb(self):
         self.bombs -= 1
         self.iframes = 180 
-        self.game.player_proj.append(Bomb(self.game, (self.hitbox.x - self.hitbox.x / 2, self.hitbox.y)))
     
     def calculate_dir(self):
         self.dx, self.dy = sin(self.angle_x) * self.speed, sin(self.angle_y) * self.speed
@@ -212,8 +211,6 @@ class Player:
                     self.grazes += 1
 
     def update(self):
-        #self.graze_angle += 1
-        #if self.legacy_shots == False:
         self.draw()
         if len(self.yinyangs) > 0:
             for yin in self.yinyangs:

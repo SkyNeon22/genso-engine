@@ -72,12 +72,16 @@ class Enemy:
         for bul in self.game.player_proj:
             if self.hitbox.collidecircle(bul.hitbox):
                 if not self.invurnelable and self.iframes <= 0:
-                    self.hp -= bul.damage * self.dmg_resist
-                    self.game.score += 10
-                    bul.kill = True 
+                    self.on_hit(bul)
 
     def shoot(self):
         self.game.proj_list.append(Projectile(self.game, (self.pos[0], self.pos[1] + 25), team="en", angle=90, speed=0.4))
+    
+    def on_hit(self, bul):
+        self.hp -= bul.damage * self.dmg_resist
+        self.game.score += 10
+        if bul.can_die:
+            bul.kill = True 
     
     def drop(self):
         drop = random.randint(1, 100)
@@ -143,23 +147,22 @@ class Boss(Enemy): # fork of the enemy class to make a boss (if you want to make
         self.invurnelable = False
 
         self.hitbox = CircleCollider(40, self.center)
-        self.nonspells = [] # non lists (if no registies used)
-        self.spellcards = [] # spell lists (if no registies used)
-        self.attorder = []] # attack order
+        self.nonspells = [Nonspell(self.game, self, self.game.diff)] # non lists (if no registies used)
+        self.spellcards = [Spellcard(self.game, self)] # spell lists (if no registies used)
+        self.attorder = [self.nonspells[0], self.spellcards[0], self.nonspells[0], self.spellcards[0]] # attack order
 
     def check_bullet(self): # check for player projectiles
         for bul in self.game.player_proj:
             if self.hitbox.collidecircle(bul.hitbox):
                 if not self.invurnelable:
-                    self.game.soundregistry.rglist["damage00"].play()
                     self.hp -= bul.damage * self.dmg_resist
                     self.game.score += 10
                     bul.kill = True
-                    #if not self.game.soundregistry.get("damage00").get_busy():
-                    #    self.game.soundregistry.get("damage00").play()
+    
+    def on_hit(self): ...
     
     def draw(self):
-        self.game.fight_area.blit(self.img, (self.pos[0], self.pos[1]))#(self.pos[0] -10, self.pos[1])) why'd I even put -10 to the  x position 💀💀
+        self.game.fight_area.blit(self.img, (self.pos[0], self.pos[1]))
     
     def update(self):
         if self.game.frametime >= self.time:
@@ -168,7 +171,6 @@ class Boss(Enemy): # fork of the enemy class to make a boss (if you want to make
                 self.game.musicregistry.rglist[self.game.current_song].stop()
                 self.game.musicregistry.rglist[self.theme_id].play(self.game.musicvolume)
                 self.music_done = True
-            self.game.soundregistry.rglist["damage00"].reload()
             try:
                 if self.attorder[self.active_attack] != None:
                     self.game.active_spell = self.attorder[self.active_attack].in_game_display_name
@@ -182,25 +184,15 @@ class Boss(Enemy): # fork of the enemy class to make a boss (if you want to make
             except IndexError:
                 self.kill = True
                 self.game.active_spell = None
-            #if self.hp != 0:
-            #   self.non_attack(self.nonspells[0], 8000)
             self.cooldown -= 1
-            #self.pos[1] += self.speed
             if self.hp <= 0:
                 for proj in self.game.proj_list:
                     proj.destroy()
                 self.kill = True
                 self.game.active_spell = None
-                drop = random.randint(1, 100)
-                if drop >= 60 and drop <= 84:
-                    self.game.pickup_list.append(Point_pickup(self.game, pos=self.pos))
-                if drop >= 85 and drop <= 99:
-                    self.game.pickup_list.append(Power_pickup(self.game, pos=self.pos))
-                elif drop >= 100:
-                    self.game.pickup_list.append(Big_Power_pickup(self.game, pos=self.pos))
+                self.drop()
             self.center = (self.pos[0] + (self.size[0] // 2), self.pos[1] + (self.size[1] // 2))
             self.hitbox.update(self.center)
             self.check_bullet()
             self.check_despawn()
             self.draw()
-

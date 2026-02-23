@@ -15,8 +15,11 @@ class REGISTRY:
     def register(self, registryname, item):
         '''Register an item in the registry:
            registryname: Id for an object
-           item: any ClassObject'''
+           item: any Object'''
         self.rglist[f"{registryname}"] = item
+    
+    def __getitem__(self, key):
+        return self.rglist[key]
     
     def load_from_json(self, rg_file):
         '''Load premade registry from a json file'''
@@ -25,7 +28,7 @@ class REGISTRY:
 
     def list_rg(self):
         '''List all objects in the registry'''
-        return self.rglist
+        return f"Objects:{self.rglist}"
     
     def __str__(self):
         '''What to return when printing REGISTRY object'''
@@ -99,8 +102,11 @@ class MUSIC_REGISTRY(REGISTRY):
                              1: sfx.Music(self.game, "assets/sfx/music/The Lost Emotion.mp3")
                              }
     
+
+    
     def get(self, item):
         return self.rglist.get(item)
 
 if __name__ == "__main__":
     s = REGISTRY()
+    s[0]

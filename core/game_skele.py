@@ -25,7 +25,7 @@ class AdvancedGameClass:
         Note: this is a "game" object\n
         and you need to supply this object to classes\n
         like this: Sound(game=self(AdvancedGameClass), ...)'''
-    def __init__(self, window_caption="Genso Engine v0.1.3 Game (CHANGE ME)", win_size=RES):
+    def __init__(self, window_caption="Genso Engine v0.1.4 Game (CHANGE ME)", win_size=RES):
         pg.init()
         self.window = pg.display.set_mode((RES), pg.OPENGL | pygame.DOUBLEBUF | pg.SRCALPHA | pg.BLEND_ADD)
         self.WIN_SIZE = win_size
@@ -52,14 +52,6 @@ class AdvancedGameClass:
         self.difficulties = ("Easy","Normal","Hard","Lunatic","Extra")     
         self.diff = self.difficulties[2]
         self.selected_button = 0
-
-
-
-
-
-        # Shottype selection
-        self.Character = None
-
         # no more exploding menus (menu flag)
         self.in_menu = False
         # pause check
@@ -70,7 +62,6 @@ class AdvancedGameClass:
         self.score = 0
         # Touhou STG without a game area is not Touhou STG
         self.fight_area = pg.Surface((384, 448),pg.SRCALPHA)
-        # small fixes
         self.left_fight_area_border = 0
         self.right_fight_area_border = self.fight_area.get_width()
         self.top_fight_area_border = 0
@@ -145,7 +136,6 @@ class AdvancedGameClass:
         self.player_proj.clear()
 
     def new_game(self):
-        self.in_select_menu = False
         self.in_menu = False
         
         self.reload()
@@ -243,5 +233,4 @@ class AdvancedGameClass:
 
 if __name__ == "__main__":
     game = AdvancedGameClass()
-
     game.run()
