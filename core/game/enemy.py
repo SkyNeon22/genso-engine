@@ -143,9 +143,9 @@ class Boss(Enemy): # fork of the enemy class to make a boss (if you want to make
         self.invurnelable = False
 
         self.hitbox = CircleCollider(40, self.center)
-        self.nonspells = [Nonspell(self.game, self, self.game.diff)] # non lists (if no registies used)
-        self.spellcards = [Spellcard(self.game, 5, self.game.diff, self)] # spell lists (if no registies used)
-        self.attorder = [self.nonspells[0], self.spellcards[0], self.nonspells[0], self.spellcards[0]] # attack order
+        self.nonspells = [] # non lists (if no registies used)
+        self.spellcards = [] # spell lists (if no registies used)
+        self.attorder = []] # attack order
 
     def check_bullet(self): # check for player projectiles
         for bul in self.game.player_proj:
@@ -203,3 +203,4 @@ class Boss(Enemy): # fork of the enemy class to make a boss (if you want to make
             self.check_bullet()
             self.check_despawn()
             self.draw()
+
