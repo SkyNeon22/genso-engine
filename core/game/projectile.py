@@ -9,7 +9,7 @@ from core.game.colliders import CircleCollider
 tileset = Tileset("assets/img/sprites/bullets/bullets.png")
 
 class Projectile:
-    def __init__(self, game, pos=(0, 0), team="en", speed=0.4, color=(200, 0, 0), angle=0, size=[16,14], htradius=6, marginxy=[5, 55]):
+    def __init__(self, game, pos=(0, 0), team="en", speed=8, color=(200, 0, 0), angle=0, size=[16,14], htradius=6, marginxy=[5, 55]):
         self.game = game
         self.speed = speed
         self.pos = list(pos)
@@ -19,6 +19,7 @@ class Projectile:
         self.ref = pg.transform.rotate(pg.Surface(self.size), angle)
         self.hitbox = CircleCollider(htradius, self.center)
         self.team = team
+        self.damage = 10
 
         self.color = color
         self.angle = radians(angle)
@@ -74,6 +75,7 @@ class Projectile:
     
     def update(self): 
         self.draw()
+        self.logic()
         if self.pos[1] <= -50 or self.pos[1] >= 600:
             self.destroy()
         if self.pos[0] <= -50 or self.pos[0] >= 600:
@@ -127,16 +129,16 @@ class ReflectingProjectile(Projectile):
     
     def logic(self):
         if self.pos[0] <= self.game.left_fight_area_border and self.reflect_count > 0:
-            self.change_angle(-degrees(self.angle))
+            self.change_angle(0 - degrees(self.angle))
             self.reflect_count -= 1
         if self.pos[0] >= self.game.right_fight_area_border and self.reflect_count > 0:
-            self.change_angle(-degrees(self.angle))
+            self.change_angle(180 - degrees(self.angle))
             self.reflect_count -= 1
         if self.pos[1] <= self.game.top_fight_area_border and self.reflect_count > 0:
-            self.change_angle(-degrees(self.angle))
+            self.change_angle(0 - degrees(self.angle))
             self.reflect_count -= 1
         if self.pos[1] >= self.game.bottom_fight_area_border and self.reflect_count > 0:
-            self.change_angle(-degrees(self.angle))
+            self.change_angle(180 - degrees(self.angle))
             self.reflect_count -= 1
         self.pos[0] += self.dx
         self.pos[1] += self.dy

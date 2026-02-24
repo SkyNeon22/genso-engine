@@ -155,12 +155,6 @@ class AdvancedGameClass:
                 if proj.kill:
                     if proj.can_die:
                         self.player_proj.remove(proj)
-                
-            for proj in self.proj_list:
-                proj.update()
-                if proj.kill:
-                    if proj.can_die:
-                        self.proj_list.remove(proj)
 
             for pickup in self.pickup_list:
                 pickup.update()
@@ -193,6 +187,12 @@ class AdvancedGameClass:
                     if enemy.kill:
                         self.bossfight = False
                         self.enemy_list.remove(enemy) 
+            for proj in self.proj_list:
+                proj.update()
+                if proj.kill:
+                    if proj.can_die:
+                        self.proj_list.remove(proj)
+
     # the update method that you can override
     def update(self):
         for ev in pg.event.get():
@@ -205,6 +205,7 @@ class AdvancedGameClass:
 
             self.update_entities()
     
+    # don't override
     def _update(self):
         self.ctx.clear(0.1, 0.2, 0.2)
 

@@ -7,8 +7,8 @@ from core.game.colliders import CircleCollider
 class Player:
     def __init__(self, game, pos=(194, 300), start_power=0.0):
         self.game = game
-        self.unfocus_speed = 0.73
-        self.focus_speed = 0.4
+        self.unfocus_speed = 2.73
+        self.focus_speed = 1.4
         self.speed = self.unfocus_speed
 
         self.lives = 2
