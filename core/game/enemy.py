@@ -108,8 +108,8 @@ class Enemy:
                 self.drop()
             self.center = (self.pos[0] + (self.size[0] // 2), self.pos[1] + (self.size[1] // 2))
             self.hitbox.update(self.center)
-            self.check_bullet()
             self.check_despawn()
+            self.check_bullet()
             self.draw()
 
 class Boss(Enemy): # fork of the enemy class to make a boss (if you want to make a boss fork this class)
@@ -148,8 +148,8 @@ class Boss(Enemy): # fork of the enemy class to make a boss (if you want to make
 
         self.hitbox = CircleCollider(40, self.center)
         self.nonspells = [Nonspell(self.game, self, self.game.diff)] # non lists (if no registies used)
-        self.spellcards = [ExperimentalSpellcard(self.game, self)] # spell lists (if no registies used)
-        self.attorder = [self.spellcards[0], self.spellcards[0], self.nonspells[0], self.spellcards[0]] # attack order
+        self.spellcards = [Spellcard(self.game, self)] # spell lists (if no registies used)
+        self.attorder = [self.nonspells[0]] # attack order
 
     def check_bullet(self): # check for player projectiles
         for bul in self.game.player_proj:

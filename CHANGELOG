@@ -1,0 +1,29 @@
+Focus on heavy optimization and convinience.
+
+--EDITOR
+none
+
+--ENGINE
+(*) - undocumented stuff from 0.1.5
+MAIN CHANGES:
+CHANGE: separated update_entities in AdvancedGameTemplate
+CHANGE: changed check_hit in Player class to save some performance
+CHANGE: no animstates for the Player
+FIX: collide_rect Finally works like intented
+FIX: MoveToDestinatedPos and RotateCamera triggers finally work, using linear interpolation
+ADDITION: proj_cap(default: 1000 for performance(the default cap was made before a huge optimization))
+ADDITION: bullet, music and sound registries are now filled in AdvancedGameTemplate(proj(or music or sfx)_registry_fill function(override to change registries))
+ADDITION: test text in devtest.py
+ADDITION: item_pickup_border_y in AdvancedGameTemplate
+
+PATTERN CHANGES:
+REMOVAL: ExperimentalSpellcard is removed in favor of bulletgroups along with the TaskSystem
+
+PROJECTILE CHANGES:
+ADDITION: lazers(beta, would be changed later), with every variation in the tileset
+ADDITION: Added bulletgroups to proj class for easier making of complex patterns
+OPTIMIZATION: Fixed Update function to save a lot of performance (previously 300 projectiles => ~40fps, now 1000 projectiles => ~48 fps)
+
+OTHER CHANGES:
+ADDITION: extend_lives for Player Class
+ADDITION: extend_bombs for Player Class

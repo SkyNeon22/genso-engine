@@ -9,16 +9,22 @@ from core.game.colliders import CircleCollider
 tileset = Tileset("assets/img/sprites/bullets/bullets.png")
 
 class Projectile:
-    def __init__(self, game, pos=(0, 0), team="en", speed=8, color=(200, 0, 0), angle=0, size=[16,14], htradius=6, marginxy=[5, 55]):
+    def __init__(self, game, bulletgroup=0, pos=(0, 0), team="en", speed=8, color=(200, 0, 0), angle=0, size=[16,14], htradius=6, marginxy=[5, 55]):
         self.game = game
+
+        self.bulletgroup = bulletgroup
+
         self.speed = speed
         self.pos = list(pos)
         self.size = size
         self.center = (self.pos[0] + (self.size[0] // 2), self.pos[1] + (self.size[1] // 2))
         self.marginxy = marginxy
         self.ref = pg.transform.rotate(pg.Surface(self.size), angle)
+
+        self.spritesize = [self.ref.get_width(), self.ref.get_height()]
         self.hitbox = CircleCollider(htradius, self.center)
         self.team = team
+        self.is_grazed = False
         self.damage = 10
 
         self.color = color
@@ -64,6 +70,7 @@ class Projectile:
     def launch(self):
         self.dx, self.dy = cos(self.angle) * self.speed, sin(self.angle) * self.speed
         self.ref = pg.transform.rotate(pg.Surface(self.size), degrees(self.angle))
+        self.spritesize = [self.ref.get_width(), self.ref.get_height()]
     
     def logic(self):
         self.pos[0] += self.dx
@@ -80,7 +87,7 @@ class Projectile:
             self.destroy()
         if self.pos[0] <= -50 or self.pos[0] >= 600:
             self.destroy()
-        self.center = (self.pos[0] + (self.ref.get_width() / 2), self.pos[1] + (self.ref.get_height() / 2))
+        self.center = (self.pos[0] + (self.spritesize[0] / 2), self.pos[1] + (self.spritesize[1] / 2))
         self.hitbox.update(self.center)
 
 

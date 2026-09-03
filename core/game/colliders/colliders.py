@@ -15,11 +15,56 @@ class CircleCollider:
         self.position = pos
     
     def colliderect(self, rect):
-        '''DISCLAIMER:\n
-        DO NOT USE IF NOT REQUIRED TO,\n
-        BECAUSE IT ONLY CHECKS FOR THE RECT'S CENTER'''
+        '''Works Like Intented'''
+        # the commented code taken from my own c# projects(i dont use unity btw)
+        # float testX = circle.X;
+        # float testY = circle.Y;
 
-        if dist(rect.center, self.position) <= self.radius:
+        # if (circle.X < rect.X)
+        # {
+        #     testX = rect.X;
+        # } else if (circle.X > rect.X + rect.Width)
+        # {
+        #     testX = rect.X + rect.Width;
+        # }
+
+        # if (circle.Y < rect.Y)
+        # {
+        #     testY = rect.Y;
+        # }
+        # else if (circle.Y > rect.Y + rect.Heigth)
+        # {
+        #     testY = rect.Y + rect.Heigth;
+        # }
+
+        # float distX = circle.X - testX;
+        # float distY = circle.Y - testY;
+        # float distance = (float)Math.Sqrt((distX * distX) + (distY*distY));
+        # if (distance <= circle.Radius)
+        # {
+        #     return true;
+        # } else
+        # {
+        #     return false;
+        # }
+
+        testX = self.x
+        testY = self.y
+        
+        if self.x < rect.left:
+            testX = rect.left
+        elif self.x > rect.right:
+            testX = rect.right
+
+        if self.y < rect.top:
+            testY = rect.top
+        elif self.y > rect.bottom:
+            testY = rect.bottom
+
+        distX = self.x - testX
+        distY = self.y - testY
+        distance = math.sqrt((distX * distX) + (distY * distY))
+        if distance <= self.radius:
             return True
         else:
             return False

@@ -84,6 +84,14 @@ class Player:
         self.ifmax = 200
         self.angle_x = 0
         self.angle_y = 0
+
+    def extend_life(self):
+        if self.lives < self.max_lives:
+            self.lives += 1
+    
+    def extend_bomb(self):
+        if self.bombs < self.max_bombs:
+            self.bombs += 1
     
     def bomb(self):
         self.bombs -= 1
@@ -106,27 +114,25 @@ class Player:
             if keys[pg.K_UP] and self.pos[1] >= -10:
                     self.angle_y = -90
                     self.move_y()
-                    self.animstate = "I"
             if keys[pg.K_DOWN] and self.pos[1] <= 416:
                     self.angle_y = 90
                     self.move_y()
-                    self.animstate = "I"
             if keys[pg.K_LEFT] and self.pos[0] >= -10:
                     self.angle_x = -90
                     self.move_x()
-                    self.animstate = "L"
+                    self.img = self.left
             if keys[pg.K_RIGHT] and self.pos[0] <= 358:
                     self.angle_x = 90
                     self.move_x()
-                    self.animstate = "R"
+                    self.img = self.right
             if keys[pg.K_LSHIFT] or keys[pg.K_RSHIFT]:
                 self.focus = True
             if keys[pg.K_z]:
                 self.shooting = True
                 if self.shooting:
                     if self.cooldown <= 0:
-                        self.game.player_proj.append(self.shot_type(self.game, (self.hitbox.x + 10, self.hitbox.y - 25), angle=-90))
-                        self.game.player_proj.append(self.shot_type(self.game, (self.hitbox.x - 12, self.hitbox.y - 25), angle=-90))
+                        self.game.player_proj.append(self.shot_type(self.game,0, (self.hitbox.x + 10, self.hitbox.y - 25), angle=-90))
+                        self.game.player_proj.append(self.shot_type(self.game,0, (self.hitbox.x - 12, self.hitbox.y - 25), angle=-90))
                         if len(self.yinyangs) > 0:
                             if self.homing_cooldown <= 0:
                                 
@@ -160,11 +166,23 @@ class Player:
                         self.deathbombc = self.deathbomb
                         return True
             for bul in self.game.proj_list:
-                if self.hitbox.collidecircle(bul.hitbox):
-                    if self.iframes <= 0:
-                        if bul.team == "en":
+                if self.graze_hitbox.collidecircle(bul.hitbox):
+                    if not bul.is_grazed:
+                        self.grazes += 1
+                        bul.is_grazed = True
+                    if self.hitbox.collidecircle(bul.hitbox):
+                        if self.iframes <= 0:
                             self.deathbombc = self.deathbomb
                             return True
+            for lazer in self.game.lazer_list:
+                for bul in lazer.projs:
+                    if self.graze_hitbox.collidecircle(bul.hitbox):
+                        self.grazes += 1
+                        if self.hitbox.collidecircle(bul.hitbox):
+                            if self.iframes <= 0:
+                                self.deathbombc = self.deathbomb
+                                return True
+                
 
     def check_colliders(self):
         is_hit = self.check_hit()
@@ -205,10 +223,6 @@ class Player:
                     self.bombs += 1
                     self.game.score += pickup.points
                     pickup.kill = True
-        for bul in self.game.proj_list:
-            if bul.team == "en":
-                if self.graze_hitbox.collidecircle(bul.hitbox):
-                    self.grazes += 1
 
     def update(self):
         self.draw()
@@ -221,7 +235,7 @@ class Player:
         self.deathbombc -= 1
         self.iframes -= 1
         if self.power <= 0.99:
-            self.yinyangs = []
+            self.yinyangs.clear()
         if self.focus == True:
             self.speed = self.focus_speed
             if self.power >= 1.0 and self.power <= 1.99:
@@ -231,7 +245,6 @@ class Player:
             if self.power >= 3.0 and self.power <= 3.99:
                 self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_3[0], self.hitbox.y + self.focus_yin_offset_p_3[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_3[2], self.hitbox.y + self.focus_yin_offset_p_3[3])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_3[4], self.hitbox.y + self.focus_yin_offset_p_3[5]))]
             if self.power >= 4.0:
-                self.power = 4.0
                 self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[0], self.hitbox.y + self.focus_yin_offset_p_4[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[2], self.hitbox.y + self.focus_yin_offset_p_4[3])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[4], self.hitbox.y + self.focus_yin_offset_p_4[5])),self.yinyang(self.game, self, pos=(self.hitbox.x + self.focus_yin_offset_p_4[6], self.hitbox.y + self.focus_yin_offset_p_4[7]))]
         else:
             self.speed = self.unfocus_speed
@@ -244,13 +257,7 @@ class Player:
             if self.power >= 4.0:
                 self.yinyangs = [self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_4[0], self.hitbox.y + self.yin_offset_p_4[1])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_4[2], self.hitbox.y + self.yin_offset_p_4[3])), self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_4[4], self.hitbox.y + self.yin_offset_p_4[5])),self.yinyang(self.game, self, pos=(self.hitbox.x + self.yin_offset_p_4[6], self.hitbox.y + self.yin_offset_p_4[7]))]
 
-        if self.animstate == "I":
-            self.img = self.other
-        elif self.animstate == "R":
-            self.img = self.right
-        elif self.animstate == "L":
-            self.img = self.left
-        self.animstate = "I"
+        self.img = self.other
         self.focus = False
         self.homing_cooldown -= 0.01
         self.cooldown -= 0.01

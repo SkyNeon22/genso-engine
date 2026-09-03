@@ -72,28 +72,9 @@ class MoveCameraToDestPos(Trigger):
         self.destinatedpos = glm.vec3(0, 0, 0)
         super().__init__(**kwargs)
         self.camera = camera
+        self.startposition = camera.position
         self.type = "movecameratodestpos"
-        self.activetime = self.endframetime - self.startframetime
-        try:
-            self.dist = glm.vec3(glm.sqrt(math.pow(self.destinatedpos.x - getattr(self.camera, 'position').x, 2)),
-                                 glm.sqrt(math.pow(self.destinatedpos.y - getattr(self.camera, 'position').y, 2)),
-                                 glm.sqrt(math.pow(self.destinatedpos.z - getattr(self.camera, 'position').z, 2)))
-        except:
-            self.dist = self.destinatedpos
-        self.speed = glm.vec3() 
-        try:
-            self.speed.x = -(self.dist.x / self.activetime) if self.destinatedpos.x < getattr(self.camera, 'position').x else self.dist.x / self.activetime
-        except ZeroDivisionError:
-            self.speed.x = 0
-        try:
-            self.speed.y = -(self.dist.y / self.activetime) if self.destinatedpos.y < getattr(self.camera, 'position').y else self.dist.y / self.activetime
-        except ZeroDivisionError:
-            self.speed.y = 0
-        try:
-            self.speed.z = -(self.dist.z / self.activetime) if self.destinatedpos.z < getattr(self.camera, 'position').z else self.dist.z / self.activetime
-        except ZeroDivisionError:
-            self.speed.z = 0
-    
+
     def todict(self):
         return {"destpos": self.destinatedpos.to_list(),
                 "startframetime": self.startframetime,
@@ -107,9 +88,12 @@ class MoveCameraToDestPos(Trigger):
     
     def update(self):
         if self.camera.app.frametime >= self.startframetime and self.camera.app.frametime <= self.endframetime:
-            self.camera.position += self.speed
-            if self.camera.app.frametime == self.endframetime:
-                self.camera.position = self.destinatedpos
+            x_interpolation = ((self.camera.app.frametime - self.startframetime) / (self.endframetime - self.startframetime))
+            y_interpolation = ((self.camera.app.frametime - self.startframetime) / (self.endframetime - self.startframetime))
+            z_interpolation = ((self.camera.app.frametime - self.startframetime) / (self.endframetime - self.startframetime))
+            self.camera.position.x = self.startposition.x + x_interpolation * (self.destinatedpos.x - self.startposition.x)
+            self.camera.position.y = self.startposition.y + y_interpolation * (self.destinatedpos.y - self.startposition.y)
+            self.camera.position.z = self.startposition.z + z_interpolation * (self.destinatedpos.z - self.startposition.z)
     
 
 
@@ -136,23 +120,8 @@ class RotateCamera(Trigger):
         super().__init__(**kwargs)
         self.type = "rotatecamera"
         self.camera = camera
-        self.activetime = self.endframetime - self.startframetime
-        self.distpitch = 0
-        self.distyaw = 0
-        self.distyaw = glm.distance(self.yaw - getattr(self.camera, 'yaw'))
-        self.distpitch = glm.distance(self.pitch - getattr(self.camera, 'pitch'))
-
-        self.speedyaw = 0
-        self.speedpitch = 0
-        try:
-            self.speedyaw = -(self.distyaw / self.activetime) if self.distyaw < getattr(self.camera, 'yaw') else self.distyaw / self.activetime
-        except ZeroDivisionError:
-            self.speedyaw = 0
-
-        try:
-            self.speedpitch = -(self.distpitch / self.activetime) if self.distpitch < getattr(self.camera, 'pitch') else self.distpitch / self.activetime
-        except ZeroDivisionError:
-            self.speedpitch = 0
+        self.startyaw = camera.yaw
+        self.startpitch = camera.pitch
 
     def todict(self):
         return {"yaw": self.yaw ,
@@ -168,9 +137,8 @@ class RotateCamera(Trigger):
     
     def update(self):
         if self.camera.app.frametime >= self.startframetime and self.camera.app.frametime <= self.endframetime:
-            self.camera.yaw += self.speedyaw
-            self.camera.pitch += self.speedpitch
-            if self.camera.app.frametime == self.endframetime:
-                self.camera.yaw == self.yaw
-                self.camera.pitch == self.pitch
+            pitch_interpolation = ((self.camera.app.frametime - self.startframetime) / (self.endframetime - self.startframetime))
+            yaw_interpolation = ((self.camera.app.frametime - self.startframetime) / (self.endframetime - self.startframetime))
+            self.camera.yaw = self.startyaw + yaw_interpolation * (self.yaw - self.startyaw)
+            self.camera.pitch = self.startpitcch + pitch_interpolation * (self.pitch - self.startpitch)
 

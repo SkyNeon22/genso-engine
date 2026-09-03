@@ -7,7 +7,7 @@ class Tileset:
         self.image = pg.image.load(file)
         self.rect = self.image.get_rect()
     
-    def draw_sprite_from_tile(self ,surf ,tilepos=[0, 0] ,pos=[0, 0] ,marginxy=[5, 7], size=[10, 10], angle=0, scale=[1.2, 1.2]):
+    def draw_sprite_from_tile(self ,surf ,tilepos=[0, 0] ,pos=[0, 0] ,marginxy=[5, 7], size=[10, 10], angle=0):
         mx, my = marginxy
         tilepos = [tilepos[0] + mx, tilepos[1] + my]
         size = size
