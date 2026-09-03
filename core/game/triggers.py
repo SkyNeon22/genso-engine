@@ -140,5 +140,5 @@ class RotateCamera(Trigger):
             pitch_interpolation = ((self.camera.app.frametime - self.startframetime) / (self.endframetime - self.startframetime))
             yaw_interpolation = ((self.camera.app.frametime - self.startframetime) / (self.endframetime - self.startframetime))
             self.camera.yaw = self.startyaw + yaw_interpolation * (self.yaw - self.startyaw)
-            self.camera.pitch = self.startpitcch + pitch_interpolation * (self.pitch - self.startpitch)
+            self.camera.pitch = self.startpitch + pitch_interpolation * (self.pitch - self.startpitch)
 
